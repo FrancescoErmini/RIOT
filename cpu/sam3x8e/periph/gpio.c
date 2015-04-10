@@ -784,16 +784,179 @@ void gpio_write(gpio_t dev, int value)
         gpio_clear(dev);
     }
 }
-void gpio_irq_enable(gpio_t dev)
-{
-    NVIC_EnableIRQ(dev);
-}
 
- 
 void gpio_irq_disable(gpio_t dev)
 {
-    NVIC_DisableIRQ(dev);
+    switch (dev) {
+#if GPIO_0_EN
+        case GPIO_0:
+            NVIC_DisableIRQ(GPIO_0_IRQ);
+            break;
+#endif
+#if GPIO_1_EN
+        case GPIO_1:
+            NVIC_DisableIRQ(GPIO_1_IRQ);
+            break;
+#endif
+#if GPIO_2_EN
+        case GPIO_2:
+            NVIC_DisableIRQ(GPIO_2_IRQ);
+            break;
+#endif
+#if GPIO_3_EN
+        case GPIO_3:
+            NVIC_DisableIRQ(GPIO_3_IRQ);
+            break;
+#endif
+#if GPIO_4_EN
+        case GPIO_4:
+            NVIC_DisableIRQ(GPIO_4_IRQ);
+            break;
+#endif
+#if GPIO_5_EN
+        case GPIO_5:
+            NVIC_DisableIRQ(GPIO_5_IRQ);
+            break;
+#endif
+#if GPIO_6_EN
+        case GPIO_6:
+            NVIC_DisableIRQ(GPIO_6_IRQ);
+            break;
+#endif
+#if GPIO_7_EN
+        case GPIO_7:
+            NVIC_DisableIRQ(GPIO_7_IRQ);
+            break;
+#endif
+#if GPIO_8_EN
+        case GPIO_8:
+            NVIC_DisableIRQ(GPIO_8_IRQ);
+            break;
+#endif
+#if GPIO_9_EN
+        case GPIO_9:
+            NVIC_DisableIRQ(GPIO_9_IRQ);
+            break;
+#endif
+#if GPIO_10_EN
+        case GPIO_10:
+            NVIC_DisableIRQ(GPIO_10_IRQ);
+            break;
+#endif
+#if GPIO_11_EN
+        case GPIO_11:
+            NVIC_DisableIRQ(GPIO_11_IRQ);
+            break;
+#endif
+#if GPIO_12_EN
+        case GPIO_12:
+            NVIC_DisableIRQ(GPIO_12_IRQ);
+            break;
+#endif
+#if GPIO_13_EN
+        case GPIO_13:
+            NVIC_DisableIRQ(GPIO_13_IRQ);
+            break;
+#endif
+#if GPIO_14_EN
+        case GPIO_14:
+            NVIC_DisableIRQ(GPIO_14_IRQ);
+            break;
+#endif
+#if GPIO_15_EN
+        case GPIO_15:
+            NVIC_DisableIRQ(GPIO_15_IRQ);
+            break;
+#endif
+    }
 }
+void gpio_irq_enable(gpio_t dev)
+{
+    switch (dev) {
+#if GPIO_0_EN
+        case GPIO_0:
+            NVIC_EnableIRQ(GPIO_0_IRQ);
+            break;
+#endif
+#if GPIO_1_EN
+        case GPIO_1:
+            NVIC_EnableIRQ(GPIO_1_IRQ);
+            break;
+#endif
+#if GPIO_2_EN
+        case GPIO_2:
+            NVIC_EnableIRQ(GPIO_2_IRQ);
+            break;
+#endif
+#if GPIO_3_EN
+        case GPIO_3:
+            NVIC_EnableIRQ(GPIO_3_IRQ);
+            break;
+#endif
+#if GPIO_4_EN
+        case GPIO_4:
+            NVIC_EnableIRQ(GPIO_4_IRQ);
+            break;
+#endif
+#if GPIO_5_EN
+        case GPIO_5:
+            NVIC_EnableIRQ(GPIO_5_IRQ);
+            break;
+#endif
+#if GPIO_6_EN
+        case GPIO_6:
+            NVIC_EnableIRQ(GPIO_6_IRQ);
+            break;
+#endif
+#if GPIO_7_EN
+        case GPIO_7:
+            NVIC_EnableIRQ(GPIO_7_IRQ);
+            break;
+#endif
+#if GPIO_8_EN
+        case GPIO_8:
+            NVIC_EnableIRQ(GPIO_8_IRQ);
+            break;
+#endif
+#if GPIO_9_EN
+        case GPIO_9:
+            NVIC_EnableIRQ(GPIO_9_IRQ);
+            break;
+#endif
+#if GPIO_10_EN
+        case GPIO_10:
+            NVIC_EnableIRQ(GPIO_10_IRQ);
+            break;
+#endif
+#if GPIO_11_EN
+        case GPIO_11:
+            NVIC_EnableIRQ(GPIO_11_IRQ);
+            break;
+#endif
+#if GPIO_12_EN
+        case GPIO_12:
+            NVIC_EnableIRQ(GPIO_12_IRQ);
+            break;
+#endif
+#if GPIO_13_EN
+        case GPIO_13:
+            NVIC_EnableIRQ(GPIO_13_IRQ);
+            break;
+#endif
+#if GPIO_14_EN
+        case GPIO_14:
+            NVIC_EnableIRQ(GPIO_14_IRQ);
+            break;
+#endif
+#if GPIO_15_EN
+        case GPIO_15:
+            NVIC_EnableIRQ(GPIO_15_IRQ);
+            break;
+#endif
+    }
+}
+
+
 
 void isr_pioa(void)
 {
