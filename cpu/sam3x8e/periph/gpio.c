@@ -784,6 +784,16 @@ void gpio_write(gpio_t dev, int value)
         gpio_clear(dev);
     }
 }
+void gpio_irq_enable(gpio_t dev)
+{
+    NVIC_EnableIRQ(dev);
+}
+
+ 
+void gpio_irq_disable(gpio_t dev)
+{
+    NVIC_DisableIRQ(dev);
+}
 
 void isr_pioa(void)
 {
