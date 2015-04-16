@@ -401,6 +401,27 @@ static int _set_aes_encryption(xbee_t *dev) {
     return -ECANCELED;
 }
 
+int _set_aes_encryption_key(xbee_t *dev, size_t size) {
+
+
+        uint8_t cmd[18];
+        resp_t resp;
+        if (size != 16) { //the AES key is 128bit, 16 byte
+            return  -EINVAL;
+        }
+        cmd[0] = 'K';
+        cmd[1] = 'Y';
+       for(int i=0;i < 16;i++){ /* Append the key to the KY API AT command */
+           cmd[i+2]=dev->aes_key[i];
+       }
+        _api_at_cmd(dev, cmd, 18, &resp);
+        if (resp.status == 0) {
+              return 2;
+          }
+        return -ECANCELED;
+}
+
+
 /*
  * Driver's "public" functions
  */
