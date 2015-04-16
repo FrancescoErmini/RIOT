@@ -96,6 +96,18 @@ int main(void)
     dump.demux_ctx = NG_NETREG_DEMUX_CTX_ALL;
     ng_netreg_register(NG_NETTYPE_UNDEF, &dump);
 
+    /* optionally, configure AES encryption for Xbee device */
+    #if OPT_AES_ENCRYPTION
+    /* test key payload */
+    static  uint8_t key_buf[16]={0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
+                             0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,};
+    /* Configure Xbee for the use of AES encryption */
+    res = xbee_encrypt_config(&dev,key_buf,1);
+    if (res < 0) {
+       puts("Error configuring AES encryption");
+    }
+    #endif
+
     /* setup Xbee device */
     res = xbee_init(&dev, XBEE_UART, XBEE_BAUDRATE, GPIO_NUMOF, GPIO_NUMOF);
     if (res < 0) {
