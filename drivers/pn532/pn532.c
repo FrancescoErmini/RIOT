@@ -73,13 +73,13 @@ uint8_t preamblebuffer[4] = { PN532_SPI_DATAWRITE, PN532_PREAMBLE, PN532_STARTCO
 #define SSGPIO 		1			//if you want to use GPIO to control SS/CS/NSS
 #define GPIO_0_EN	1			//Enable GPIO_0. pin 23 on the GPIO
 #define SPI_0_EN	1			//Enable SPI_0
-#define spi_cs		0
+//#define spi_cs		0
 
-static int spi_dev = 0;			//SPI_0
-static int spi_mode = 0; 		//SPI_CONF_FIRST_RISING ( spi.c )
+//static int spi_dev = 0;			//SPI_0
+//static int spi_mode = 0; 		//SPI_CONF_FIRST_RISING ( spi.c )
 //static int spi_speed = 0; 	//SPI_SPEED_100KHZ
 //static int spi_speed = 1; 	//SPI_SPEED_400KHZ
-static int spi_speed = 2;		//SPI_SPEED_1MHZ
+//static int spi_speed = 2;		//SPI_SPEED_1MHZ
 //static int spi_speed = 3;		//SPI_SPEED_5MHZ
 //static int spi_speed = 4; 	//SPI_SPEED_10MHZ
 
@@ -90,7 +90,8 @@ static int spi_speed = 2;		//SPI_SPEED_1MHZ
  *
  */
 /**************************************************************************/
-void pn532_init_master(void){
+
+int pn532_init_master(pn532_t * dev, spi_t spi_dev, spi_conf_t spi_mode, spi_speed_t spi_speed, gpio_t spi_cs){
 
 	#ifdef PN532DEBUG
 		printf("SPI_%i not initialized as master, cs: GPIO_%i, mode: %i, speed: %i\n", spi_dev, spi_cs, spi_mode, spi_speed);
@@ -112,7 +113,7 @@ void pn532_init_master(void){
 		printf("SPI_%i successfully initialized as master, cs: GPIO_%i, mode: %i, speed: %i\n", spi_dev, spi_cs, spi_mode, spi_speed);
 		sleep(2);
 	#endif
-    return;
+    return 0;
 }
 
 /**************************************************************************/
