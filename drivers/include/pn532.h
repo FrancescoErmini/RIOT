@@ -39,6 +39,8 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "periph/spi.h"
+#include "periph/gpio.h"
 
 #define PN532_PREAMBLE                      (0x00)
 #define PN532_STARTCODE1                    (0x00)
@@ -174,7 +176,7 @@ typedef struct {
 	gpio_t spi_cs;			/**< GPIO used to control the pn532 slave select pin */
 
 	/**
-	 * @ TODO
+	 * @ TODO buffer data P2P e mifare card data buffer address
 	 */
 
 }pn532_t;
@@ -184,7 +186,7 @@ typedef struct {
  * @brief	Setting up SPI device, mode and speed.
  *
  */
-int pn532_init_master(pn532_t * dev, spi_t spi_dev, spi_conf_t spi_mode, spi_speed_t spi_speed, gpio_t spi_cs){
+int pn532_init_master(pn532_t * dev, spi_t spi_dev, spi_conf_t spi_mode, spi_speed_t spi_speed, gpio_t spi_cs);
 
 /**
  *   @brief  	Low-level SPI write. Send 1 byte to PN532
@@ -192,7 +194,7 @@ int pn532_init_master(pn532_t * dev, spi_t spi_dev, spi_conf_t spi_mode, spi_spe
  *   @param  	p       8-bit command to write to the SPI bus
  *   @return	res		1 if the transfer is without errors
  */
-uint8_t pn532_spi_write(uint8_t p);
+uint8_t pn532_spi_write(pn532_t * dev, uint8_t p);
 /**
  * 	@brief  Low-level SPI write. Send an array of bytes to PN532
  *
@@ -201,13 +203,13 @@ uint8_t pn532_spi_write(uint8_t p);
  *
  * 	@returns			number bytes sent
  */
-uint8_t pn532_spi_transfer_bytes(uint8_t *buffer, uint8_t blen);
+uint8_t pn532_spi_transfer_bytes(pn532_t * dev, uint8_t *buffer, uint8_t blen);
 /**
  *  @brief  Low-level SPI read wrapper
  *
  *  @returns The 8-bit value that was read from the SPI bus
  */
-uint8_t pn532_spi_read(void);
+uint8_t pn532_spi_read(pn532_t * dev);
 /*
  *	@brief  Low-level SPI reverse char byte
  *
@@ -217,13 +219,13 @@ unsigned char reverse(unsigned char b);
 /**
  *	@brief  Low-level SPI CS set the given GPIO to LOW/HIGH
  */
-void pn532_ss_on(void);
-void pn532_ss_off(void);
+void pn532_ss_on(gpio_t spi_cs);
+void pn532_ss_off(gpio_t spi_cs);
 /**
  *  @brief  Wake up PN532 board
  *  @brief	We also could send a wake up frame but it should just works as it is.
  */
-void pn532_begin(void);
+void pn532_begin(pn532_t * dev);
 /**
  *  @brief		Write a command to the PN532, automatically inserting the
  *  @brief      preamble and required frame details (checksum, len, etc.)
@@ -234,7 +236,7 @@ void pn532_begin(void);
  *
  *  @returns				Num bytes transferred on the SPI bus
  */
-uint8_t pn532_spi_write_command(uint8_t *buff, uint8_t* cmd, uint8_t cmdlen);
+uint8_t pn532_spi_write_command(pn532_t * dev, uint8_t *buff, uint8_t* cmd, uint8_t cmdlen);
 /**
  *  @brief  Read a command from the PN532, automatically inserting the
  *  @brief	preamble and required frame details (checksum, len, etc.)
@@ -243,14 +245,14 @@ uint8_t pn532_spi_write_command(uint8_t *buff, uint8_t* cmd, uint8_t cmdlen);
  *
  *  @returns            Number of bytes read, -2,-3 on error
  */
-uint16_t pn532_read_pn( uint8_t *buffer );
+uint16_t pn532_read_pn(pn532_t * dev,  uint8_t *buffer );
 /**
  * 	@brief  Write to PN532 Status Read byte and read PN532 Status if is
  * 	@brief	Ready. RDY = 0x01
  *
  * 	@returns	Status of the PN532
  */
-uint8_t pn532_is_ready(void);
+uint8_t pn532_is_ready(pn532_t * dev);
 /**
  *  @brief  	Write to PN532 Status Read byte and read PN532 Status if is
  *   			Ready. RDY = 0x01 Then the host send the Status Read field.
@@ -258,21 +260,21 @@ uint8_t pn532_is_ready(void);
  *
  *	@returns	negative on error, 1 on command successfully received
  */
-uint8_t pn532_check_ack (void);
+uint8_t pn532_check_ack (pn532_t * dev);
 /**
  *	@brief  	Read frame from the PN532 and check the ACK received
  *				First of all I send DATAREAD (0x03) field
  *
  *	@returns	0 if the ACK frame is correct
  */
-uint8_t pn532_read_ack(void);
+uint8_t pn532_read_ack(pn532_t * dev);
 /**
  *	@brief  	Write ACK frame from host to PN532.
  *				This command is optional for some functions.
  *
  *	@returns	1 when the ACK frame is sent
  */
-void pn532_write_ack(void);
+void pn532_write_ack(pn532_t * dev);
 
 /**
  *	@brief  	Prints a hexadecimal value in plain characters
@@ -291,13 +293,13 @@ uint8_t pn532_print_hex( uint8_t *data, uint8_t numBytes);
  *	@returns	1 on success
  *	@returns	-1 on error
  */
-uint32_t pn532_get_firmware_version(uint8_t *res, uint8_t *ic, uint8_t *version, uint8_t *rev, uint8_t *support);
+uint32_t pn532_get_firmware_version(pn532_t * dev, uint8_t *res, uint8_t *ic, uint8_t *version, uint8_t *rev, uint8_t *support);
 /**
  *	@brief		Get General Status allows the host controller to know at
  *     			a given moment the complete situation of the PN532
  *
  */
-void pn532_get_general_status(void);
+void pn532_get_general_status(pn532_t * dev);
 /*
  *	@brief		This command is used to set internal parameters of the PN532
  *				and then to configure its behavior regarding different cases.
@@ -310,7 +312,7 @@ void pn532_get_general_status(void);
  *
  *	@returns	1 on success, 0 or negative number on error
  */
-uint8_t pn532_set_parameters( uint8_t nad, uint8_t did, uint8_t autatr, uint8_t autrats, uint8_t picc );
+uint8_t pn532_set_parameters(pn532_t * dev,  uint8_t nad, uint8_t did, uint8_t autatr, uint8_t autrats, uint8_t picc );
 /*
  *	@brief		Configures the SAM (Secure Access Module)
  *				This command is used to select the data flow path by
@@ -318,7 +320,7 @@ uint8_t pn532_set_parameters( uint8_t nad, uint8_t did, uint8_t autatr, uint8_t 
  *
  *	@returns	True on success, false on error
  */
-bool pn532_SAM_config(void);
+bool pn532_SAM_config(pn532_t * dev);
 
 /**************************DEP Chaining Part*********************************/
 /**
@@ -334,7 +336,7 @@ bool pn532_SAM_config(void);
  *
  *	@returns	1 on success, 0 or negative number on error
  */
-uint16_t pn532_in_jump_for_dep ( uint8_t actpass, uint8_t br, uint8_t next, uint8_t * atrres, uint8_t * alen );
+uint16_t pn532_in_jump_for_dep (pn532_t * dev,  uint8_t actpass, uint8_t br, uint8_t next, uint8_t * atrres, uint8_t * alen );
 /**
  * @brief		This command is used by a host controller to activate a target
  *				using either active or passive communication mode.
@@ -345,7 +347,7 @@ uint16_t pn532_in_jump_for_dep ( uint8_t actpass, uint8_t br, uint8_t next, uint
  * @params		blen	Buffer length
  *
  */
-uint16_t pn532_in_jump_for_psl ( uint8_t actpass, uint8_t br, uint8_t next );
+uint16_t pn532_in_jump_for_psl (pn532_t * dev,  uint8_t actpass, uint8_t br, uint8_t next );
 /*
  *  @brief		This command is used to support protocol data exchanges
  *				between the PN532 as initiator and a target.
@@ -357,7 +359,7 @@ uint16_t pn532_in_jump_for_psl ( uint8_t actpass, uint8_t br, uint8_t next );
  *
  *  @returns	1 on success, 0 or negative number on error
  */
-uint8_t pn532_in_data_exchange ( uint8_t * buffer, uint8_t blen, uint8_t tg, uint8_t * mi, uint8_t * data, uint8_t * dlen );
+uint8_t pn532_in_data_exchange (pn532_t * dev,  uint8_t * buffer, uint8_t blen, uint8_t tg, uint8_t * mi, uint8_t * data, uint8_t * dlen );
 /*
  *	@brief		The host controller uses this command to configure the PN532 as target.
  *
@@ -365,7 +367,7 @@ uint8_t pn532_in_data_exchange ( uint8_t * buffer, uint8_t blen, uint8_t tg, uin
  *
  *  @returns	1 on success,	0 or negative number on error
  */
-uint8_t pn532_tg_init_as_target( uint8_t mode );
+uint8_t pn532_tg_init_as_target(pn532_t * dev,  uint8_t mode );
 /**
  *	@brief		This command is used in combination with the TgInitAsTarget
  *				command to give the General Bytes.
@@ -376,7 +378,7 @@ uint8_t pn532_tg_init_as_target( uint8_t mode );
  *
  *	@returns	1 on success, 0 or negative number on error
  */
-uint8_t pn532_tg_set_general_bytes( uint8_t * gt, uint8_t glen );
+uint8_t pn532_tg_set_general_bytes(pn532_t * dev,  uint8_t * gt, uint8_t glen );
 /*
  *  @brief		This command is used in case of the PN532 configured as target
  *  			for Data Exchange Protocol (DEP) or for ISO/IEC14443-4 protocol
@@ -388,7 +390,7 @@ uint8_t pn532_tg_set_general_bytes( uint8_t * gt, uint8_t glen );
  *
  *  @returns			Byte length read on success, negative number on error
  */
-uint16_t pn532_tg_get_data ( uint8_t * mi, uint8_t * data, uint8_t * dlen );
+uint16_t pn532_tg_get_data (pn532_t * dev,  uint8_t * mi, uint8_t * data, uint8_t * dlen );
 /*
  *  @brief		This command is used in case of the PN532 configured as target
  *  			for Data Exchange Protocol (DEP) or for ISO/IEC14443-4 protocol
@@ -401,7 +403,7 @@ uint16_t pn532_tg_get_data ( uint8_t * mi, uint8_t * data, uint8_t * dlen );
  *
  *  @returns	Byte length on success, negative number on error
  */
-uint8_t pn532_tg_set_data ( uint8_t * buffer, uint8_t blen );
+uint8_t pn532_tg_set_data (pn532_t * dev,  uint8_t * buffer, uint8_t blen );
 /*
  *  @brief		This command is used in case of the PN532 configured as target for Data
  *				Exchange Protocol (DEP) if the overall amount of data to be sent cannot be
@@ -412,7 +414,7 @@ uint8_t pn532_tg_set_data ( uint8_t * buffer, uint8_t blen );
  *
  *  @returns	Byte length on success, negative number on error
  */
-bool pn532_tg_set_meta_data ( uint8_t * buffer, uint8_t blen );
+bool pn532_tg_set_meta_data (pn532_t * dev,  uint8_t * buffer, uint8_t blen );
 /*
  *	@brief		This command is used when the PN532 is configured as target.
  *				This command is used to get a packet of data from an initiator
@@ -423,7 +425,7 @@ bool pn532_tg_set_meta_data ( uint8_t * buffer, uint8_t blen );
  *	@params		length is the array's length
  *
  */
-uint8_t pn532_tg_get_initiator_command ( uint8_t * incommand, uint8_t * length );
+uint8_t pn532_tg_get_initiator_command (pn532_t * dev,  uint8_t * incommand, uint8_t * length );
 /*
  *	@brief		This command is used to send a response packet of data to an initiator.
  *
@@ -432,13 +434,13 @@ uint8_t pn532_tg_get_initiator_command ( uint8_t * incommand, uint8_t * length )
  *
  *  @returns	1 on success,	0 or negative number on error
  */
-uint8_t pn532_tg_response_to_initiator ( uint8_t * tgresponse, uint8_t rlen );
+uint8_t pn532_tg_response_to_initiator (pn532_t * dev,  uint8_t * tgresponse, uint8_t rlen );
 /**
  * @brief		This command is used by the host controller to know what
  * 				the current state of the PN532 is.
  *
  */
-void pn532_tg_get_target_status(void);
+void pn532_tg_get_target_status(pn532_t * dev);
 
 /*****************************Mifare Classic Part*********************************/
 /**
@@ -452,7 +454,7 @@ void pn532_tg_get_target_status(void);
  *
  *  @returns true on succes, false on error
  */
-bool pn532_read_passive_target_id(uint8_t cardbaudrate, uint8_t *uid, uint8_t * uidlength);
+bool pn532_read_passive_target_id(pn532_t * dev, uint8_t cardbaudrate, uint8_t *uid, uint8_t * uidlength);
 /**
  *	@brief		Tries to authenticate a block of memory on a MIFARE card using the
  *				INDATAEXCHANGE command.  See section 7.3.8 of the PN532 User Manual
@@ -470,7 +472,7 @@ bool pn532_read_passive_target_id(uint8_t cardbaudrate, uint8_t *uid, uint8_t * 
  *
  *	@returns	1 on success, 0 on error
  */
-uint8_t pn532_mifareclassic_auth_block(uint8_t *uid, uint8_t uidLen, uint32_t blockNumber, uint8_t keyNumber, uint8_t *keyData);
+uint8_t pn532_mifareclassic_auth_block(pn532_t * dev, uint8_t *uid, uint8_t uidLen, uint32_t blockNumber, uint8_t keyNumber, uint8_t *keyData);
 /**
  *	@brief		Tries to read an entire 16-bytes data block at the specified block
  *				address.
@@ -482,7 +484,7 @@ uint8_t pn532_mifareclassic_auth_block(uint8_t *uid, uint8_t uidLen, uint32_t bl
  *
  *	@returns	1 on success, 0 on error
  */
-uint8_t pn532_mifareclassic_read_data_block(uint8_t blockNumber, uint8_t * data);
+uint8_t pn532_mifareclassic_read_data_block(pn532_t * dev, uint8_t blockNumber, uint8_t * data);
 /**
  *	@brief		Tries to write an entire 16-byte data block at the specified block
  *				address.
@@ -493,13 +495,13 @@ uint8_t pn532_mifareclassic_read_data_block(uint8_t blockNumber, uint8_t * data)
  *
  *  @returns 	1 on success, 0 on error
  */
-uint8_t pn532_mifareclassic_write_data_block( uint8_t blockNumber, uint8_t * data );
+uint8_t pn532_mifareclassic_write_data_block(pn532_t * dev,  uint8_t blockNumber, uint8_t * data );
 /**
  *	@brief		Formats a Mifare Classic card to store NDEF Records
  *
  *	@returns	1 on success, 0 for an error
  */
-uint8_t pn532_mifareclassic_format_ndef(void);
+uint8_t pn532_mifareclassic_format_ndef(pn532_t * dev);
 /**
  *	@brief		Format a clean Mifare Classic 1K card as an NFC Forum tag
  *				(to store NDEF messages that can be read by any NFC enabled
@@ -519,7 +521,7 @@ uint8_t pn532_mifareclassic_format_ndef(void);
  *
  *	@returns		1 on success, 0 on error
  */
-uint8_t pn532_format_to_ndef( uint8_t * url, uint8_t ndefprefix, uint8_t blockNumber);
+uint8_t pn532_format_to_ndef(pn532_t * dev,  uint8_t * url, uint8_t ndefprefix, uint8_t blockNumber);
 /**
  *	@brief		Writes an NDEF URI Record to the specified sector (1..15)
  *				Note that this function assumes that the Mifare Classic card is
@@ -534,7 +536,7 @@ uint8_t pn532_format_to_ndef( uint8_t * url, uint8_t ndefprefix, uint8_t blockNu
  *
  *	@returns	1 on success, 0 on error
  */
-uint8_t pn532_mifareclassic_write_ndef_uri (uint8_t sectorNumber, uint8_t uriIdentifier, const char * url);
+uint8_t pn532_mifareclassic_write_ndef_uri (pn532_t * dev, uint8_t sectorNumber, uint8_t uriIdentifier, const char * url);
 /**
  *	@brief		Tries to read an entire 4-byte page at the specified address.
  *
@@ -544,7 +546,7 @@ uint8_t pn532_mifareclassic_write_ndef_uri (uint8_t sectorNumber, uint8_t uriIde
  *
  *	@returns	1 on success, 0 on error
  */
-uint8_t pn532_mifareultralight_read_page (uint8_t page, uint8_t *buffer);
+uint8_t pn532_mifareultralight_read_page (pn532_t * dev, uint8_t page, uint8_t *buffer);
 
 #ifdef __cplusplus
 }
