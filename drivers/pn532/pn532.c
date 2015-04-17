@@ -51,8 +51,13 @@
 /* Uncomment these lines to enable reverse bit order function before to send and after reading msg */
 #define LSBfirst 1		//Reverse bit order
 
+/* @brief   Delay required by PN532 to wake up or seep, 2ms
+ */
+#define SPI_SS_DELAY               (2U * 1000U)
+#define SPI_DELAY_1ms			   (1U * 1000U)
+#define SPI_DELAY_100us			   (100U)
 /* Set delay(ms) */
-#define delay(X)	(usleep(1000*X))
+//#define delay(X)	(usleep(1000*X))
 
 #define ACKSIZE 6
 uint8_t pn532ack[ACKSIZE] = {0x00, 0x00, 0xFF, 0x00, 0xFF, 0x00};
@@ -64,6 +69,9 @@ uint8_t writebuffer[PN532_BUFFSIZE];
 uint8_t readbuffer[PN532_BUFFSIZE];
 
 uint8_t preamblebuffer[4] = { PN532_SPI_DATAWRITE, PN532_PREAMBLE, PN532_STARTCODE1, PN532_STARTCODE2 };
+
+
+
 
 /**************************************************************************/
 /*	@brief  Instantiates a new PN532 SPI communication	*/
@@ -95,7 +103,7 @@ int pn532_init_master(pn532_t * dev, spi_t spi_dev, spi_conf_t spi_mode, spi_spe
 
 	#ifdef PN532DEBUG
 		printf("SPI_%i not initialized as master, cs: GPIO_%i, mode: %i, speed: %i\n", spi_dev, spi_cs, spi_mode, spi_speed);
-		sleep(2);
+		hwtimer_wait(HWTIMER_TICKS(SPI_SS_DELAY));
 	#endif
 
 	int res;
@@ -111,7 +119,7 @@ int pn532_init_master(pn532_t * dev, spi_t spi_dev, spi_conf_t spi_mode, spi_spe
     pn532_ss_off();
 	#ifdef PN532DEBUG
 		printf("SPI_%i successfully initialized as master, cs: GPIO_%i, mode: %i, speed: %i\n", spi_dev, spi_cs, spi_mode, spi_speed);
-		sleep(2);
+		hwtimer_wait(HWTIMER_TICKS(SPI_SS_DELAY));
 	#endif
     return 0;
 }
@@ -144,7 +152,7 @@ uint8_t pn532_spi_write(uint8_t p) {
 			#endif
 			printf("Transferred byte on the SPI bus with value: %X\n", p);
 		}
-		sleep(1);
+		hwtimer_wait(HWTIMER_TICKS(SPI_DELAY_1ms));
 	#endif
 
 	return res;
@@ -206,7 +214,7 @@ uint8_t pn532_spi_read(void){
 			#endif
 			printf("Read on SPI bus value %X\n", in);
 		}
-		sleep(0.1);
+		hwtimer_wait(HWTIMER_TICKS(SPI_DELAY_100us));
 	#endif
 
 	return in;
