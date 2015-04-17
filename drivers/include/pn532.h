@@ -14,7 +14,7 @@
 /**
  * @ingroup     drivers_pn532
  * @{
- * @file        
+ * @file        pn532.c
  * @brief       C Library for the PN532 written for Riot OS.
  * 				SPI Driver for NXP's PN532 NFC/13.56MHz RFID Transceiver
  * 				This is a library to connect a PN532 chip on a Sam3x CPU.
@@ -31,12 +31,14 @@
 #ifndef PN532_H_
 #define PN532_H_
 
-#include <stdint.h>
-#include <stdbool.h>
-
 #ifdef __cplusplus
  extern "C" {
 #endif
+
+
+
+#include <stdint.h>
+#include <stdbool.h>
 
 #define PN532_PREAMBLE                      (0x00)
 #define PN532_STARTCODE1                    (0x00)
@@ -158,6 +160,24 @@
 //#define PN532_BUFFSIZE	265
 //uint8_t writebuffer[PN532_BUFFSIZE];
 //uint8_t readbuffer[PN532_BUFFSIZE];
+
+
+ /**
+  * @brief PN532 Device Descriptor
+  *
+  */
+typedef struct {
+	/* SPI peripheral setting */
+	int spi_dev;			/**< SPI peripheral used to communicate with pn532*/
+	int spi_mode;			/**< pn532 spi mode must be 0*/
+	int spi_speed;			/**< pn532 spi speed suggested is 2, 1MHz*/
+	gpio_t spi_cs;			/**< GPIO used to control the pn532 slave select pin */
+
+	/**
+	 * @ TODO
+	 */
+
+}pn532_t;
 
 /**
  * @brief	Initialization PN532 SPI communication.
@@ -529,5 +549,4 @@ uint8_t pn532_mifareultralight_read_page (uint8_t page, uint8_t *buffer);
 }
 #endif
 
-#endif /* PN532_H_ */
-/** @} */
+#endif
