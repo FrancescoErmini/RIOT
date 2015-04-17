@@ -168,9 +168,9 @@
   */
 typedef struct {
 	/* SPI peripheral setting */
-	int spi_dev;			/**< SPI peripheral used to communicate with pn532*/
-	int spi_mode;			/**< pn532 spi mode must be 0*/
-	int spi_speed;			/**< pn532 spi speed suggested is 2, 1MHz*/
+	spi_t spi_dev;			/**< SPI peripheral used to communicate with pn532*/
+	spi_conf_t spi_mode;			/**< pn532 spi mode must be 0*/
+	spi_speed_t spi_speed;			/**< pn532 spi speed suggested is 2, 1MHz*/
 	gpio_t spi_cs;			/**< GPIO used to control the pn532 slave select pin */
 
 	/**
@@ -184,7 +184,8 @@ typedef struct {
  * @brief	Setting up SPI device, mode and speed.
  *
  */
-void pn532_init_master(void);
+int pn532_init_master(pn532_t * dev, spi_t spi_dev, spi_conf_t spi_mode, spi_speed_t spi_speed, gpio_t spi_cs){
+
 /**
  *   @brief  	Low-level SPI write. Send 1 byte to PN532
  *
