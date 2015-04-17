@@ -43,9 +43,10 @@
 #include <component/component_pio.h>
 #include <board.h>
 #include <periph_conf.h>
-
+#include "debug.h"
+#include "errno.h"
 /* Uncomment these lines to enable debug output for PN532, MIFARE or P2P */
-#define PN532DEBUG
+#define ENABLE_DEBUG    (1)
 #define MIFAREDEBUG
 #define P2PDEBUG
 /* Uncomment these lines to enable reverse bit order function before to send and after reading msg */
@@ -100,27 +101,39 @@ uint8_t preamblebuffer[4] = { PN532_SPI_DATAWRITE, PN532_PREAMBLE, PN532_STARTCO
 /**************************************************************************/
 
 int pn532_init_master(pn532_t * dev, spi_t spi_dev, spi_conf_t spi_mode, spi_speed_t spi_speed, gpio_t spi_cs){
+/* Check device and spi parameter */
+	   if (dev == NULL) {
+		   DEBUG("NO DEVICE DESCRIPTOR");
+	        return -ENODEV;
+	    }
+	    if (spi_dev >= SPI_NUMOF) {
+	    	DEBUG("SELECTED SPI NOT SUPPORTED");
+	        return -ENXIO;
+	    }
 
-	#ifdef PN532DEBUG
-		printf("SPI_%i not initialized as master, cs: GPIO_%i, mode: %i, speed: %i\n", spi_dev, spi_cs, spi_mode, spi_speed);
-		hwtimer_wait(HWTIMER_TICKS(SPI_SS_DELAY));
-	#endif
+	/*  configure  spi device descriptor  */
+	dev ->spi_dev = spi_dev;
+	dev->spi_mode = spi_mode;
+	dev->spi_speed = spi_speed;
+	dev->spi_cs = spi_cs;
 
-	int res;
-    res = spi_init_master( spi_dev, spi_mode, spi_speed );
+	hwtimer_wait(HWTIMER_TICKS(SPI_SS_DELAY));
+	DEBUG("SPI_%i not yet initialized as master, cs: GPIO_%i, mode: %i, speed: %i\n", dev->spi_dev, dev->spi_cs, dev->spi_mode, dev->spi_speed);
+
+    int res = spi_init_master( spi_dev, spi_mode, spi_speed );
     if (res < 0) {
-        printf("SPI_init_master: error initializing SPI_%i device (code %i)\n", spi_dev, res);
-        }
+        DEBUG("SPI_init_master: error initializing SPI_%i device (code %i)\n", dev->spi_dev, res);
+        return -1;
+    }
     res = gpio_init_out(spi_cs, 1); //GPIO_PULLUP = 1
     if (res < 0){
-        printf("GPIO_init_out: error initializing GPIO_%i as CS line (code %i)\n", spi_cs, res);
-    	}
-    /* Set the given GPIO pin to HIGH */
-    pn532_ss_off();
-	#ifdef PN532DEBUG
-		printf("SPI_%i successfully initialized as master, cs: GPIO_%i, mode: %i, speed: %i\n", spi_dev, spi_cs, spi_mode, spi_speed);
-		hwtimer_wait(HWTIMER_TICKS(SPI_SS_DELAY));
-	#endif
+        DEBUG("error initializing GPIO_%i as CS line (code %i)\n", dev->spi_cs, res);
+        return -1;
+    }
+    /* pn532 off */
+    pn532_ss_off(dev->spi_cs);
+    DEBUG("SPI_%i successfully initialized as master, cs: GPIO_%i, mode: %i, speed: %i\n", dev->spi_dev, dev->spi_cs, dev->spi_mode, dev->spi_speed);
+	hwtimer_wait(HWTIMER_TICKS(SPI_SS_DELAY));
     return 0;
 }
 
@@ -262,12 +275,12 @@ unsigned char reverse(unsigned char b) {
  */
 /**************************************************************************/
 
-void pn532_ss_on(void){
+void pn532_ss_on(gpio_t spi_cs){
 	gpio_clear(spi_cs); //Set the given GPIO pin to LOW
-	delay(2);
+	hwtimer_wait(HWTIMER_TICKS(SPI_SS_DELAY));
 }
 
-void pn532_ss_off(void){
+void pn532_ss_off(gpio_t spi_cs){
 	gpio_set(spi_cs);  //Set the given GPIO pin to HIGH
 }
 
