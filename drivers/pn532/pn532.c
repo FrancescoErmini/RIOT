@@ -48,8 +48,10 @@
 #include "hwtimer.h"
 /* Uncomment these lines to enable debug output for PN532, MIFARE or P2P */
 #define ENABLE_DEBUG    (1)
-#define MIFAREDEBUG
-#define P2PDEBUG
+#define MIFAREDEBUG	1
+#define P2PDEBUG	1
+#define PN532DEBUG 1
+
 /* Uncomment these lines to enable reverse bit order function before to send and after reading msg */
 #define LSBfirst 1		//Reverse bit order
 
@@ -60,7 +62,6 @@
 #define SPI_DELAY_100us			   (100U)
 /* Set delay(ms) */
 #define delay(X)	(hwtimer_wait(1000*X))
-#define PN532DEBUG 1
 #define ACKSIZE 6
 uint8_t pn532ack[ACKSIZE] = {0x00, 0x00, 0xFF, 0x00, 0xFF, 0x00};
 #define NACKSIZE 6
@@ -148,26 +149,25 @@ int pn532_init_master(pn532_t * dev, spi_t spi_dev, spi_conf_t spi_mode, spi_spe
 /**************************************************************************/
 uint8_t pn532_spi_write(pn532_t * dev,uint8_t p) {
 
-	#ifdef LSBfirst
+	/* Reverse bit order before write on SPI bus. PN532 uses LSB SPI m*/
 		p = reverse(p);
-	#endif
 
-	int res;
-	res = spi_transfer_byte(dev->spi_dev, p, NULL);
-
-	#ifdef LSBfirst
+		int res = spi_transfer_byte(dev->spi_dev, p, NULL);
+		/**
+		 * @TODO is this useful?
+		 */
 		p = reverse(p);
-	#endif
 
-	#ifdef PN532DEBUG
 		if (res == 1){
-			#ifdef LSBfirst
-				printf("[Reverse-bit-order] ");
-			#endif
-			printf("Transferred byte on the SPI bus with value: %X\n", p);
+			DEBUG("Transferred byte on the SPI bus with value: %X\n", p);
+
+		}
+		else {
+			/**
+			 * TODO use errno
+			 */
 		}
 		delay(1);
-	#endif
 
 	return res;
 }
@@ -217,19 +217,18 @@ uint8_t pn532_spi_read(pn532_t * dev){
 
 	res = spi_transfer_byte(dev->spi_dev, NULL, &in);
 
-	#ifdef LSBfirst
+	/* Reverse bit order before reading. PN532 uses SPI in LSB mode. */
 		in = reverse(in);
-	#endif
 
-	#ifdef PN532DEBUG
 		if ( res == 1 ){
-			#ifdef LSBfirst
-				printf("[Reverse-bit-order] ");
-			#endif
-			printf("Read on SPI bus value %X\n", in);
+			DEBUG("Read on SPI bus value %X\n", in);
+		}
+		else{
+			/**
+			 * @TODO errno msg
+			 */
 		}
 delay(0.1);
-		#endif
 
 	return in;
 }
@@ -298,9 +297,7 @@ void pn532_ss_off(gpio_t spi_cs){
  */
 void pn532_begin(pn532_t * dev) {
 
-	#ifdef PN532DEBUG
-		printf("Wake up PN532 Shield\n");
-	#endif
+	DEBUG("Wake up PN532 Shield\n");
 	pn532_ss_on(dev->spi_cs);		//Set the given GPIO pin to LOW
 
 	//Clean writebuffer[] and readbuffer[]
@@ -309,9 +306,7 @@ void pn532_begin(pn532_t * dev) {
 		readbuffer[i] = 0x00;
 	}
 
-	#ifdef PN532DEBUG
-		printf("Writebuffer and readbuffer cleared...\n");
-	#endif
+	DEBUG("Writebuffer and readbuffer cleared...\n");
 	/*
 	//uint8_t cc[] = { 0x55, 0x55, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x04, 0xFC, 0xD4, 0x14, 0x01, 0x01, 0x16, 0x00 };
 	//uint8_t cc[] = { 0x55, 0x55, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03, 0xFD, 0xD4, 0x14, 0x01, 0x017, 0x00 };
@@ -412,8 +407,9 @@ uint8_t pn532_spi_write_command(pn532_t * dev, uint8_t *buff, uint8_t* cmd, uint
 	//Sending made frame from host to PN532
 	end = pn532_spi_transfer_bytes(dev, buff, length);
 
+		DEBUG("Wrote %i bytes.\n", end);
+
 	#ifdef PN532DEBUG
-		printf("Wrote %i bytes.\n", end);
 		for(int i=0; i<length; i++){
 			printf("| %X |",buff[i]);
 		}
@@ -440,13 +436,15 @@ uint16_t pn532_read_pn(pn532_t * dev, uint8_t *buffer ){
 	uint8_t timeout = PN532_ACK_WAIT_TIME;
 	uint16_t result;
 	uint8_t len;
-
+/**
+ * @TODO use errno
+ */
 	do{
 		//Until RDY=1
 		while (!pn532_is_ready(dev)) {
 		        timeout--;
 		        if (0 == timeout) {
-		            printf("Time out when waiting for ACK\n");
+		            DEBUG("Time out when waiting for ACK\n");
 		            result = PN532_TIMEOUT;
 		            break;
 		        }
@@ -469,9 +467,7 @@ uint16_t pn532_read_pn(pn532_t * dev, uint8_t *buffer ){
 		uint8_t lcs = pn532_spi_read(dev);
 		if(0x00 != (uint8_t)(lcs+len) ){
 			result = PN532_INVALID_FRAME;
-			#ifdef PN532DEBUG
-					printf("PN532_INVALID_FRAME %d %d.\n", lcs, len);
-			#endif
+			DEBUG("PN532_INVALID_FRAME %d %d.\n", lcs, len);
 			break;
 		}
 		//Starting storage to readbuffer from TFI to the last PDn field
@@ -490,7 +486,7 @@ uint16_t pn532_read_pn(pn532_t * dev, uint8_t *buffer ){
 		//Read DCS field
 		uint8_t dcs = pn532_spi_read(dev);
 		if( 0x00 != (uint8_t)(sum + dcs) ){
-			 printf("checksum is not ok\n");
+			 DEBUG("checksum is not ok\n");
 			 result = PN532_INVALID_FRAME;
 			 break;
 		}
@@ -503,13 +499,11 @@ uint16_t pn532_read_pn(pn532_t * dev, uint8_t *buffer ){
 		result = len;
 	}while(0);
 
-	#ifdef PN532DEBUG
-		printf( "Here it is the read buffer.\n" );
+		DEBUG( "Here it is the read buffer.\n" );
 		for( uint8_t i=0; i < len; i++){
-			printf( "| [%i]: %X |", i, buffer[i] );
+			DEBUG( "| [%i]: %X |", i, buffer[i] );
 		}
-		printf( "\n" );
-	#endif
+		DEBUG( "\n" );
 
 	pn532_ss_off(dev->spi_cs);
 
@@ -586,13 +580,13 @@ uint8_t pn532_read_ack(pn532_t * dev){
 
 	pn532_ss_off(dev->spi_cs);
 
+	DEBUG("START ACK FRAME:\n");
 	#ifdef PN532DEBUG
-		printf("ACK frame:\n");
 		for(int i=0; i<ACKSIZE; i++){
 			printf("| %X |", ackbuff[i]);
 		}
-		printf("END ACK FRAME\n");
 	#endif
+	DEBUG("END ACK FRAME\n");
 
 	return memcmp( ackbuff, pn532ack, sizeof(pn532ack));
 }
@@ -607,9 +601,7 @@ uint8_t pn532_read_ack(pn532_t * dev){
 /**************************************************************************/
 void pn532_write_ack(pn532_t * dev){
 	//Send ACK frame from host to PN532
-	#ifdef PN532DEBUG
-		printf("Writing the ACK frame to PN532\n");
-	#endif
+	DEBUG("Writing the ACK frame to PN532\n");
 	//Write from host to PN532 ACK frame
 	pn532_ss_on(dev->spi_cs);
 	pn532_spi_write(dev, PN532_SPI_DATAWRITE);
@@ -701,14 +693,16 @@ void pn532_get_general_status(pn532_t * dev){
 	// Read response packet
 	uint8_t len = pn532_read_pn(dev, readbuffer );
 
-	#ifdef PN532DEBUG
+
 		//Read status information frame
-		printf("Frame response of GetGeneralStatus:\n");
+		DEBUG("Start General Status frame.\n");
+		#ifdef PN532DEBUG
 		for(int i=0; i < len; i++){
 			printf("| [%i] %X |", i, readbuffer[i]);
 		}
-		printf("End General Status frame.\n");
-	#endif
+		#endif
+		DEBUG("End General Status frame.\n");
+
 
 	//pn532_write_ack();
 
@@ -759,9 +753,8 @@ uint8_t pn532_set_parameters(pn532_t * dev, uint8_t nad, uint8_t did, uint8_t au
 		picc <<= 5;
 		flag |= picc;
 	}
-	#ifdef PN532DEBUG
-		printf("Value Flag: %X", flag);
-	#endif
+		DEBUG("Value Flag: %X", flag);
+
 
 	uint8_t cc[2];
 	cc[0] = PN532_COMMAND_SETPARAMETERS;
@@ -893,9 +886,7 @@ uint16_t pn532_in_jump_for_psl (pn532_t * dev, uint8_t actpass, uint8_t br, uint
 	//Read response
 	uint16_t len = pn532_read_pn(dev, readbuffer );
 	if ( readbuffer[2] != 0x00 ) {
-		#ifdef P2PDEBUG
 			printf("Status InJumpForPSL incorrect! Value: %X\n", readbuffer[2] );
-		#endif
 		return PN532_INVALID_FRAME;
 	}
 
@@ -1088,9 +1079,7 @@ uint8_t pn532_tg_set_general_bytes(pn532_t * dev, uint8_t * gt, uint8_t glen ) {
 	//Read response
 	pn532_read_pn(dev, readbuffer );
 	if ( readbuffer[2] != 0x00 ) {
-		#ifdef P2PDEBUG
 			printf("Status TgSetGeneralBytes incorrect! Value: %X\n", readbuffer[2] );
-		#endif
 			return PN532_INVALID_FRAME;
 	}
 
@@ -1252,9 +1241,7 @@ uint8_t pn532_tg_get_initiator_command (pn532_t * dev, uint8_t * incommand, uint
 	delay(50);
     uint16_t len = pn532_read_pn( dev,readbuffer );
 	if ( readbuffer[2] != 0x00 ) {
-		#ifdef P2PDEBUG
 			printf("Status TgSetGeneralBytes incorrect! Value: %X\n", readbuffer[2] );
-		#endif
 			return PN532_INVALID_FRAME;
 	}
 	*length = len;
@@ -1296,9 +1283,7 @@ uint8_t pn532_tg_response_to_initiator (pn532_t * dev, uint8_t * tgresponse, uin
 	delay(100);
 	pn532_read_pn(dev, readbuffer );
 	if ( readbuffer[2] != 0x00 ) {
-		#ifdef P2PDEBUG
 			printf("Status TgSetGeneralBytes incorrect! Value: %X\n", readbuffer[2] );
-		#endif
 		return PN532_INVALID_FRAME;
 	}
 	return 1;
