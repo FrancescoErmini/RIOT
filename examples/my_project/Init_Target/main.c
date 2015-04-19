@@ -65,7 +65,7 @@ int p2p_initiator(void){
 	uint8_t alen = 0;
 	uint8_t size_mess = sizeof(message);
 
-
+delay(3000);
 
 printf("\n\n\nInitializing PN532 as Initiator!\n\n\n");
 	uint8_t actpass = 0x01;	//Active mode
@@ -93,7 +93,6 @@ return 1;
 
 
 int p2p_target(void){
-
 	printf("\nInitialization as target!\n\n");
 	uint8_t data[265];
 	uint8_t dlen = 0;
@@ -135,6 +134,8 @@ int main(void)
 		printf("Welcome to RIOT, this is the Sensor");
 		delay(5);
 		pn532_initialization(&pn532);
+		 printf("INITIALIZATION FINISH!");
+
 		if(! pn532_SAM_config(&pn532) ){
 				printf("Configuration SAM didn't end well! HALT");
 				while(1);
@@ -142,15 +143,28 @@ int main(void)
 
 		//p2p_initiator();
 
-		delay(2000);
+		//delay(2000);
 		////pn532_initialization(&pn532);
 
 		p2p_target();
-		delay(20000);
+		//delay(60000);
 		printf("SWITCHING SENSORR!!");
+		 if(! pn532_SAM_config(&pn532) ){
+			 		printf("Configuration SAM didn't end well! HALT");
+			 		while(1);
+			 	}
+
+
 		p2p_initiator();
-		delay(2000);
+		//delay(2000);
 		printf("SWITCHING SENSORR!!");
+
+		 if(! pn532_SAM_config(&pn532) ){
+			 		printf("Configuration SAM didn't end well! HALT");
+			 		while(1);
+			 	}
+
+
 		p2p_target();
 
 

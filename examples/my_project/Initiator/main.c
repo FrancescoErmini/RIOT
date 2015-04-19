@@ -35,7 +35,7 @@ static pn532_t pn532;
 
 
 int pn532_initialization(pn532_t * pn532){
-    puts("PN532 initialization");
+    puts("PN532 init");
     hwtimer_wait(10*1000*1000);
     pn532_init_master(pn532, SPI_0, SPI_CONF_FIRST_RISING, SPI_SPEED_1MHZ, GPIO_0 );
 
@@ -73,7 +73,7 @@ int p2p_initiator(void){
 	uint8_t atr_res[255];
 	uint8_t alen = 0;
 	uint8_t size_mess = sizeof(message);
-
+delay(3000);
 printf("\n\n\nInitializing PN532 as Initiator!\n\n\n");
 	uint8_t actpass = 0x01;	//Active mode
 	uint8_t br = 0x02;		//424 kbps
@@ -101,7 +101,7 @@ return 1;
 
 int p2p_target(void){
 
-	printf("\nInitialization as target!\n\n");
+
 	uint8_t data[255];
 	uint8_t dlen = 0;
 	uint8_t response[255];
@@ -112,6 +112,7 @@ int p2p_target(void){
 		atr = 0x00;
 		rats = 0x01;
 		picc = 0x01;
+		printf("\nInitialization as target!\n\n");
 		//pn532_tg_set_parameters( &pn532, nad, did, atr, rats, picc );
 		pn532_set_parameters( &pn532, nad, did, atr, rats, picc );
 		uint8_t mode = 0x02;	//DEP only
@@ -149,16 +150,28 @@ int main(void)
 	 	}
 
 	// p2p_target();
-	 delay(20000);
+	// delay(30000);
 		////pn532_initialization(&pn532);
 
 
 	 p2p_initiator();
-	 delay(2000);
+	// delay(2000);
 	 puts("SWITCHING GATEWAY!!!!");
+	 if(! pn532_SAM_config(&pn532) ){
+		 		printf("Configuration SAM didn't end well! HALT");
+		 		while(1);
+		 	}
+
 	 p2p_target();
-	 delay(20000);
+	// delay(60000);
 	 puts("SWITCHING GATEWAY!!!!");
+
+	 if(! pn532_SAM_config(&pn532) ){
+		 		printf("Configuration SAM didn't end well! HALT");
+		 		while(1);
+		 	}
+
+
 	 p2p_initiator();
 	 for(int i=0;i<10;i++)
 	 {
