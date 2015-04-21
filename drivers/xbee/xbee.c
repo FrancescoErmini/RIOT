@@ -396,6 +396,59 @@ static int _set_proto(xbee_t *dev, uint8_t *val, size_t len)
     return sizeof(ng_nettype_t);
 }
 
+static int _set_aes_encryption(xbee_t *dev) {
+
+    uint8_t cmd[3];
+    uint8_t status;
+    resp_t resp;
+
+/* get the current state of Encryption */
+            cmd[0] = 'E';
+            cmd[1] = 'E';
+
+            _api_at_cmd(dev, cmd, 2, &resp);
+
+            if (resp.status == 0) {
+                 status = resp.data[0]; 
+               }
+
+/* Prevent writing the same value in EE. */
+    if (dev->encrypt_toggle != status ){
+        cmd[0] = 'E';
+        cmd[1] = 'E';
+        cmd[2] = dev->encrypt_toggle; /* 1 (ON) or 0 (OFF) */
+        _api_at_cmd(dev, cmd, 3, &resp);
+
+           if (resp.status == 0) {
+                 return 2;
+           }
+       }
+    else {
+        DEBUG("EE already set to %i",status);
+        return 2;
+    }
+    return -ECANCELED;
+}
+
+static int _set_aes_encryption_key(xbee_t *dev, size_t size) {
+
+        uint8_t cmd[18];
+        resp_t resp;
+        if (size != 16) { //the AES key is 128bit, 16 byte
+            return  -EINVAL;
+        }
+        cmd[0] = 'K';
+        cmd[1] = 'Y';
+       for(int i=0;i < 16;i++){ /* Append the key to the KY API AT command */
+           cmd[i+2]=dev->aes_key[i];
+       }
+        _api_at_cmd(dev, cmd, 18, &resp);
+        if (resp.status == 0) {
+              return 2;
+          }
+        return -ECANCELED;
+}
+
 /*
  * Driver's "public" functions
  */
@@ -493,8 +546,45 @@ int xbee_init(xbee_t *dev, uart_t uart, uint32_t baudrate,
     tmp[0] = (uint8_t)(XBEE_DEFAULT_PANID & 0xff);
     _set_panid(dev, tmp, 2);
 
+#if OPT_AES_ENCRYPTION
+    if (dev->encrypt_toggle){ /* Enable Encryption */
+        _set_aes_encryption(dev);
+    /* Write the key into the Xbee. */
+        _set_aes_encryption_key(dev,16);
+
+    }
+    else                     /* Disable Encryption */
+        _set_aes_encryption(dev);
+
+#endif
+
     DEBUG("xbee: Initialization successful\n");
     return 0;
+}
+
+int xbee_encrypt_config(xbee_t * dev, uint8_t * key_buf, unsigned int encryption_toggle)
+{ 
+    /* check device and input parameters */
+     if (dev == NULL) {
+            return -ENODEV;
+        }
+     if (encryption_toggle > 1) {
+         return -EINVAL;
+     }
+     if (key_buf == NULL) {
+         return -EINVAL;
+     }
+
+     /*put the Xbee encryption status on/off depending on the input argument encryption_toggle*/
+     dev->encrypt_toggle = encryption_toggle;
+    if(dev->encrypt_toggle) {
+            DEBUG("XBEE AES ENCRYPTION TURN ON");
+            dev->aes_key = key_buf; //assign the key payload address at the device descriptor
+    }
+    else
+            DEBUG("XBEE AES ENCRYPTION TURN OFF ");
+    
+ return 0;
 }
 
 static inline bool _is_broadcast(ng_netif_hdr_t *hdr) {
