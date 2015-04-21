@@ -329,6 +329,17 @@ static int _set_channel(xbee_t *dev, uint8_t *val, size_t len)
     return -EINVAL;
 }
 
+static int _get_max_packet_size(xbee_t *dev, uint16_t *val, size_t max)
+{
+    if (max < 2) {
+        return -EOVERFLOW;
+    }
+
+    *val = XBEE_MAX_PAYLOAD_LENGTH;
+
+    return 2;
+}
+
 static int _get_panid(xbee_t *dev, uint8_t *val, size_t max)
 {
     uint8_t cmd[2];
@@ -384,43 +395,6 @@ static int _set_proto(xbee_t *dev, uint8_t *val, size_t len)
     memcpy(&(dev->proto), val, sizeof(ng_nettype_t));
     return sizeof(ng_nettype_t);
 }
-
-static int _set_aes_encryption(xbee_t *dev) {
-
-    uint8_t cmd[3];
-    resp_t resp;
-
-        cmd[0] = 'E';
-        cmd[1] = 'E';
-        cmd[2] = dev->encrypt_status; /* 1 (ON) or 0 (OFF) */
-        _api_at_cmd(dev, cmd, 3, &resp);
-
-        if (resp.status == 0) {
-               return 2;
-           }
-    return -ECANCELED;
-}
-
-int _set_aes_encryption_key(xbee_t *dev, size_t size) {
-
-
-        uint8_t cmd[18];
-        resp_t resp;
-        if (size != 16) { //the AES key is 128bit, 16 byte
-            return  -EINVAL;
-        }
-        cmd[0] = 'K';
-        cmd[1] = 'Y';
-       for(int i=0;i < 16;i++){ /* Append the key to the KY API AT command */
-           cmd[i+2]=dev->aes_key[i];
-       }
-        _api_at_cmd(dev, cmd, 18, &resp);
-        if (resp.status == 0) {
-              return 2;
-          }
-        return -ECANCELED;
-}
-
 
 /*
  * Driver's "public" functions
@@ -519,45 +493,8 @@ int xbee_init(xbee_t *dev, uart_t uart, uint32_t baudrate,
     tmp[0] = (uint8_t)(XBEE_DEFAULT_PANID & 0xff);
     _set_panid(dev, tmp, 2);
 
-#if OPT_AES_ENCRYPTION
-    if (dev->encrypt_status){ /* Enable Encryption */
-        _set_aes_encryption(dev);
-    /* Write the key into the Xbee. */
-        _set_aes_encryption_key(dev,16);
-
-    }
-    else                     /* Disable Encryption */
-        _set_aes_encryption(dev);
-
-#endif
-
     DEBUG("xbee: Initialization successful\n");
     return 0;
-}
-
-int xbee_encrypt_config(xbee_t * dev, uint8_t * key_buf, unsigned int encryption_toggle)
-{
-    /* check device and input parameters */
-     if (dev == NULL) {
-            return -ENODEV;
-        }
-     if (encryption_toggle > 1) {
-         return -EINVAL;
-     }
-     if (key_buf == NULL) {
-         return -EINVAL;
-     }
-
-     /*put the Xbee encryption status on/off depending on the input argument encryption_toggle*/
-     dev->encrypt_status = encryption_toggle;
-    if(dev->encrypt_status) {
-            DEBUG("XBEE AES ENCRYPTION TURN ON");
-            dev->aes_key = key_buf; //assign the key payload address at the device descriptor
-    }
-    else
-        DEBUG("XBEE AES ENCRYPTION TURN OFF ");
-    
-return 0;
 }
 
 static inline bool _is_broadcast(ng_netif_hdr_t *hdr) {
@@ -621,7 +558,7 @@ static int _send(ng_netdev_t *netdev, ng_pktsnip_t *pkt)
         dev->tx_buf[1] = (uint8_t)((size + 11) >> 8);
         dev->tx_buf[2] = (uint8_t)(size + 11);
         dev->tx_buf[3] = API_ID_TX_LONG_ADDR;
-        memcpy(dev->tx_buf + 11, ng_netif_hdr_get_dst_addr(hdr), 8);
+        memcpy(dev->tx_buf + 5, ng_netif_hdr_get_dst_addr(hdr), 8);
         pos = 13;
     }
     /* set options */
@@ -685,6 +622,8 @@ static int _get(ng_netdev_t *netdev, ng_netconf_opt_t opt,
             return _get_addr_long(dev, (uint8_t *)value, max_len);
         case NETCONF_OPT_CHANNEL:
             return _get_channel(dev, (uint8_t *)value, max_len);
+        case NETCONF_OPT_MAX_PACKET_SIZE:
+            return _get_max_packet_size(dev, (uint16_t *)value, max_len);
         case NETCONF_OPT_NID:
             return _get_panid(dev, (uint8_t *)value, max_len);
         case NETCONF_OPT_PROTO:
@@ -757,7 +696,7 @@ static void _isr_event(ng_netdev_t *netdev, uint32_t event_type)
     /* allocate and fill interface header */
     pkt_head = ng_pktbuf_add(NULL, NULL,
                              sizeof(ng_netif_hdr_t) + (2 * addr_len),
-                             NG_NETTYPE_UNDEF);
+                             NG_NETTYPE_NETIF);
     if (pkt_head == NULL) {
         DEBUG("xbee: Error allocating netif header in packet buffer on RX\n");
         dev->rx_count = 0;
