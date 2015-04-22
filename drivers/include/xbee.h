@@ -62,7 +62,7 @@
 /**
  * @brief   Default short address used after initialization
  */
-#define XBEE_DEFAULT_SHORT_ADDR     (0x0230)
+#define XBEE_DEFAULT_SHORT_ADDR     (0x0001)
 
 /**
  * @brief   Default PAN ID used after initialization
@@ -77,7 +77,7 @@
 /**
   * @brief  Set this flag to 1 allows the use of AES encryption in the Xbee Driver
   */
-#define OPT_AES_ENCRYPTION          (0)
+#define OPT_AES_ENCRYPTION          (1)
 
 /**
  * @brief   States of the internal FSM for handling incoming UART frames
@@ -136,8 +136,8 @@ typedef struct {
     uint16_t rx_count;                  /**< counter for ongoing transmission */
     uint16_t rx_limit;                  /**< size RX frame transferred */
     /* AES encryption configuration */
-    uint8_t * aes_key;                   /**< pointer to the AES key buffer */
-    unsigned int encrypt_toggle;         /**< Current state of encryption: (1) activate (0) deactivate */
+    unsigned int encrypt;               /**< Current state of encryption: 
+                                         *   (1) activate (0) deactivate */
 } xbee_t;
 
 /**
@@ -162,20 +162,6 @@ extern const ng_netdev_driver_t xbee_driver;
  */
 int xbee_init(xbee_t *dev, uart_t uart, uint32_t baudrate,
               gpio_t sleep_pin, gpio_t status_pin);
-
-#if OPT_AES_ENCRYPTION
-/**
- * @brief Configure AES encryption for the given Xbee Device
- * @param[out] dev              Xbee device to configure
- * @param[in] key_buf           Address where the key payload is stored
- * @param[in] encryption_toggle 0 - turn off the Xbee encryption
- *                              1 - turn on  the Xbee encryption
- * @return                      0 on success
- * @return                      -ENODEV on invalid device descriptor
- * @return                      -EINVAL on invalid arguments
- */
-int xbee_encrypt_config(xbee_t * dev, uint8_t * key_buf, unsigned int encryption_toggle);
-#endif
 
 #ifdef __cplusplus
 }
