@@ -62,7 +62,7 @@
 /**
  * @brief   Default short address used after initialization
  */
-#define XBEE_DEFAULT_SHORT_ADDR     (0x0001)
+#define XBEE_DEFAULT_SHORT_ADDR     (0x0230)
 
 /**
  * @brief   Default PAN ID used after initialization
@@ -73,11 +73,6 @@
  * @brief   Default channel used after initialization
  */
 #define XBEE_DEFAULT_CHANNEL        (17U)
-
-/**
-  * @brief  Set this flag to 1 allows the use of AES encryption in the Xbee Driver
-  */
-#define OPT_AES_ENCRYPTION          (1)
 
 /**
  * @brief   States of the internal FSM for handling incoming UART frames

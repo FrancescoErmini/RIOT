@@ -96,11 +96,6 @@ int main(void)
     dump.demux_ctx = NG_NETREG_DEMUX_CTX_ALL;
     ng_netreg_register(NG_NETTYPE_UNDEF, &dump);
 
-    #if OPT_AES_ENCRYPTION
-        /* Test key payload. Change those value to match your own key. */
-        static  uint8_t key_buf[16]={0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
-                     0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,};
-        /* Configure Xbee for the use of AES encryption */
        res = xbee_encrypt_config(&dev,key_buf,1);
        if (res < 0) {
          puts("Error configuring AES encryption");
@@ -112,6 +107,15 @@ int main(void)
         puts("Error initializing xbee device driver");
         return -1;
     }
+    /* Optionall, set encryption */
+     #ifndef OPT_ENCRYPTION         
+     ng_netconf_enable_t encrypt = NETCONF_ENABLE;       //turn on the encyption
+    //ng_netconf_enable_t encrypt = NETCONF_DISABLE;    //turn off the encryption
+    static  uint8_t key_buf[16]={0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
+                 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,};
+    dev.driver->set((ng_netdev_t *)&dev,NETCONF_OPT_ENCRYPTION, &encrypt,1);
+    dev.driver->set((ng_netdev_t *)&dev,NETCONF_OPT_ENCRYPTION_KEY,key_buf,sizeof(key_buf));
+    #endif
     /* start MAC layer */
     iface = ng_nomac_init(nomac_stack, sizeof(nomac_stack), PRIORITY_MAIN - 3,
                           "xbee_l2", (ng_netdev_t *)&dev);
