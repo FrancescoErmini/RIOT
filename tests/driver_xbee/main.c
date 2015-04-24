@@ -109,6 +109,15 @@ int main(void)
         puts("Error initializing MAC layer");
         return -1;
     }
+    /* optionally en/disable and set Xbee encryption key */
+    #ifdef OPT_ENCRYPTION
+    ng_netconf_enable_t encrypt = NETCONF_ENABLE;      /* warning: use NETCONF_DISABLE before
+                                                        * set OPT_ENCRYPTION to undefined */
+    static  uint8_t key_buf[XBEE_ENCRYPTION_KEY_LEN]={0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
+                 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,}; // change those value to match your key
+    dev.driver->set((ng_netdev_t *)&dev,NETCONF_OPT_ENCRYPTION, &encrypt,1);
+    dev.driver->set((ng_netdev_t *)&dev,NETCONF_OPT_ENCRYPTION_KEY,key_buf,sizeof(key_buf));
+    #endif
 
     /* start the shell */
     puts("Initialization OK, starting shell now");
