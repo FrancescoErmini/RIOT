@@ -36,11 +36,36 @@
 
 
 
-#define TIMEOUT_S (20)
+#define TIMEOUT_S (40)
 #define TIMEOUT_US (TIMEOUT_S * 1000 * 1000)
 #define TIMEOUT (HWTIMER_TICKS(TIMEOUT_US))
 
+int keyexc_is_equal(uint8_t * known_id, uint8_t * recv_id, int size)
+{
+	for(int i=0;i<size;i++){
+		if (known_id[i] != recv_id[i]){
+			return 0;
+			}
+		}
+return 1;
+}
 
+int id_check(keyexc_t * keyexc, uint8_t * id_received)
+{
+	if( keyexc->node_type == SENSOR ){
+			if(keyexc_is_equal(keyexc->gateway_id,id_received,4)){
+				return 1;
+			}
+
+	}
+	if( keyexc->node_type == GATEWAY){
+		if(keyexc_is_equal(keyexc->node_id,id_received,4)){
+				return 1;
+		}
+
+	}
+	return 0;
+}
 
 
 void pn532_initialization(pn532_t * pn532){
@@ -165,90 +190,225 @@ return 1;
 
 
 
-
-/*	static void callback(void * ptr)
-	{
-	   done = 1;
-
-	}*/
-
-
-void p2p_keyexc (keyexc_t * keyexc, pn532_t * pn532, uint8_t * message,uint8_t size_mess, uint8_t * response) {
-	  if(keyexc->node_type == 0) {
-		  puts("THIS IS GATEWAY");
-		  p2p_target(pn532,response);
-		  p2p_initiator(pn532,message,sizeof(message));
-	  }
-
-	  if(keyexc->node_type == 1) {
-		  	  puts("THIS IS SENSOR");
-	 		  p2p_initiator(pn532,message,sizeof(message));
-	 		  p2p_target(pn532,response);
-	 	  }
-
-
-  }
-
 static void callback(void *done_)
 {
     volatile int *done = done_;
     *done = 1;
 }
 
-void keyexc(keyexc_t * keyexc, pn532_t * pn532)
-   {
-	//keyexc->node_type = GATEWAY;
-	//keyexc->keyexc_type= KEY_802154;
-	  pn532_initialization(pn532);
+int keyexc(keyexc_t * keyexc, pn532_t * pn532)
+ {
+	pn532_initialization(pn532);
+
+	uint8_t resp = 0x00;
+	uint8_t info [4] = {0x00, 0x00, 0x00, 0x00 };
 
 
-	uint8_t ack[] =  { 0x06, 0x07, 0x08, 0x09, 0x10 };
-	uint8_t node_id[] = {0xAA,0xAA,0xAA,0xAA,0xAA};
-	///uint8_t key_type = (uint8_t) keyexc->keyexc_type;
+	 uint8_t ack = 0x01;
+	 uint8_t gateway_id_request = 0x02;
+	 uint8_t gateway_id_verified = 0x03;
+	 uint8_t gateway_id_failed = 0x04;
+	 uint8_t node_id_request = 0x05;
+	 uint8_t node_id_verified = 0x06;
+	 uint8_t node_id_failed = 0x07;
+	 uint8_t key_type_request = 0x08;
+	 uint8_t key_type_verified = 0x09;
+	 uint8_t key_type_failed = 0x10;
+	 uint8_t key_payload_request = 0x11;
+	 uint8_t ket_payload_verified = 0x12;
+	 uint8_t key_payload_failed = 0x13;
 
 
-//	uint8_t ack_buf=0x00;
-	///uint8_t id_buf[] ={0x00,0x00,0x00,0x00 };
+	uint8_t *node_id = keyexc->node_id;
+	uint8_t * gateway_id = keyexc->gateway_id;
 
-	uint8_t resp2[] ={0x00,0x00,0x00,0x00,0x00 };
-	uint8_t resp1[] ={0x00,0x00,0x00,0x00,0x00 };
-	//uint8_t resp1_size;
-	//uint8_t resp2_size;
-	//unsigned long timeout = 30;
+	uint8_t key_type = keyexc->keyexc_type;
 
-
+	keyexc->keyexc_status=KEYEXC_IDLE;
 	volatile int done = 0;
-
       hwtimer_set(TIMEOUT, callback, (void *) &done);
-       do {
-    	   printf("start timeout loop");
+  do {
 
-    	   p2p_keyexc(keyexc, pn532, ack, sizeof(ack), resp1);
-    	   p2p_keyexc(keyexc, pn532, node_id,sizeof(node_id),resp2);
-    	   printf("stop timeout loop");
-       } while (done == 0);
 
-int l;
-    	for(l=0;l< (sizeof(resp1)) ;l++)
+
+    	   if(keyexc->node_type == 0) {
+    	  			  puts("THIS IS GATEWAY");
+    	  			  /**ACK CHECK**/
+    	  			  p2p_target(pn532,&resp); //gateway stà in attesa di riceve un ack
+    	  			  if (ack == resp){    // se riceve ack,
+    	  					keyexc->keyexc_status = KEYEXC_ACK_RECEIVED;  //setta lo status in ack received e
+    	  					 p2p_initiator(pn532,&ack,1); // manda a sua volta un ack
+    	  			  }
+    	  			  else {
+    	  					keyexc->keyexc_status = KEYEXC_ACK_FAILED; //se riceve un ack sbagliato, fallisce
+    	  					return -1;
+    	  					  }
+    	  			  /**ID CHECK**/
+    	  			  //ID GATEWAY CHECK
+    	  			  p2p_target(pn532,&resp); // Gateway si mette in attesa di ricevere istruzioni,
+    	  			 if (resp == gateway_id_request){  //se il comando di richiesta id è corretto,
+    	  				 keyexc->keyexc_status = KEYEXC_GATEWAY_ID_REQUEST_RECEIVED; // aggiorno lo status
+    	  				 p2p_initiator(pn532,gateway_id,4); //e manda al nodo il suo id. ovvero gateway_id.
+    	  			 }
+    	  			 else {
+    	  				keyexc->keyexc_status = KEYEXC_GATEWAY_ID_REQUEST_FAILED;
+    	  				return -1;
+    	  			 }
+
+
+    	  			  p2p_target(pn532,&resp); // aspetto risposta (ok/no) dal sensore
+    	  			  if (resp == gateway_id_verified){ //se il sensore mi ha risposto ok
+    	  				  keyexc->keyexc_status = KEYEXC_GATEWAY_ID_VERIFIED; // aggiorna lo status
+    	  			  }
+    	  			  else { // if (resp == gateway_id_failed)
+    	  				  keyexc->keyexc_status= KEYEXC_GATEWAY_ID_FAILED; // altrimenti esco.
+    	  				  return -1;
+    	  			  }
+    	  			  // ID NODE CHECK
+	  				  p2p_initiator(pn532,&node_id_request,1); // poi,  chiede al sensore di mandargli il suo id.
+
+    	  			  p2p_target(pn532,info); // aspetto di ricevere l'id del nodo
+    	  			  if (id_check(keyexc,keyexc->node_id)) { //se gateway riconosce il nodo ***
+    	  				  keyexc->keyexc_status = KEYEXC_NODE_ID_VERIFIED; //aggiorno lo status
+    	  				  p2p_initiator(pn532,&node_id_verified,1);  //e lo comunico al nodo
+    	  			  }
+    	  			  else {
+    	  				  keyexc->keyexc_status = KEYEXC_NODE_ID_FAILED;
+    	  				  p2p_initiator(pn532,&node_id_failed,1);
+    	  				  return -1;
+    	  			  }
+    	  			  /** KEY TYPE CHECK **/
+    	  			  p2p_target(pn532,&resp);
+    	  			  if (resp == key_type_request) {
+    	  				  keyexc->keyexc_status = KEYEXC_TYPE_REQUEST_RECEIVED; //aggiorno lo status
+    	  				  p2p_initiator(pn532,&key_type,1);   // e lo comunico al sensore
+    	  			  }
+    	  			  else {
+    	  				  keyexc->keyexc_status = KEYEXC_TYPE_REQUEST_FAILED;
+    	  				 // p2p_initiator(pn532,key_type_fail,1);
+    	  				  return -1;
+    	  			  }
+
+    	  			  /** KEY PAYLOAD **/
+    	  			  p2p_target(pn532,&resp); // aspetto di ricevere la richiesta per la chiave
+    	  			  if (resp == key_payload_request) { // se la richiesta è giusta
+    	  			 				  keyexc->keyexc_status = KEYEXC_PAYLOAD_REQUEST_RECEIVED; //aggiorno lo status
+    	  			 				  p2p_initiator(pn532,keyexc->key_payload,16);   // e mando la chiave al sensore
+    	  			 			  }
+    	  			 			  else { puts("something went wrong");
+    	  			 				 // keyexc->keyexc_status = KEYEXC_REQUEST_FAIL;
+    	  			 				  return -1;
+    	  			 			  }
+    	  		//	p2p_target(pn532,&resp);
+    	  			 /* p2p_target(pn532,key_payload_check);
+    	  			  if (key_payload_check == key_payload_verified){
+    	  				  keyexc->keyexc_status = KEY_PAYLOAD_VERIFIED;
+    	  				  return 2;
+    	  			  }
+    	  			  else {
+    	  				  keyexc->keyexc_status = KEY_PAYLOAD_FAIL;
+    	  				  return -1;
+    	  			  }*/
+
+
+    	 }
+           if(keyexc->node_type == 1) {
+              	  		  	  puts("THIS IS SENSOR");
+              	  		  	  /** ACK **/
+              	  		  	 p2p_initiator(pn532,&ack,1); // sensore manda il primo ack
+              	  		  	 p2p_target(pn532,&resp);
+              	  		  	 if (ack == resp){ // se  riceve un ack correttamente,
+              	  		  		 keyexc->keyexc_status = KEYEXC_ACK_RECEIVED; //aggiorno lo status
+              	  		  	 }
+              	  		  	 else {
+              	  		  		 keyexc->keyexc_status = KEYEXC_ACK_FAILED;
+              	  		  		 return -1;
+              	  		  	  }
+              	  		  	 /** ID CHECK **/
+              	  		  	 // ID GATEWAY CHECK
+          	  		 		  p2p_initiator(pn532,&gateway_id_request,1); //e chiedo al gatway di mandargli l'ID
+              	  	 		  p2p_target(pn532,info);
+              	  	 		  if(id_check(keyexc,info)){   //se l'ID ricevuto corrispone a quello conosciuto
+              	  	 			  keyexc->keyexc_status = KEYEXC_GATEWAY_ID_VERIFIED; //aggiorna lo status
+              	  	 			  p2p_initiator(pn532,&gateway_id_verified,1);   //e notificalo al gateway
+              	  	 		  }
+              	  	 		  else {
+              	  	 		     keyexc->keyexc_status = KEYEXC_GATEWAY_ID_FAILED;
+              	  	 			 p2p_initiator(pn532,&gateway_id_failed,1);
+              	  	 			 return -1;
+              	  	 		  }
+              	  	 		  // NODE ID CHECK
+              	  	 		  p2p_target(pn532,&resp);  // aspetto che gateway chieda l' ID
+              	  	 		  if (resp==node_id_request){
+              	  	 			  keyexc->keyexc_status = KEYEXC_NODE_ID_REQUEST_RECEIVED;
+              	  	 			  p2p_initiator(pn532,keyexc->node_id,4); //mando l'ID al Gateway
+              	  	 		  }
+              	  	 		  else {
+              	  	 			keyexc->keyexc_status = KEYEXC_NODE_ID_REQUEST_FAILED;
+              	  	 			// TODO: send notify with 4 byte address?
+              	  	 			return -1;
+              	  	 		  }
+              	  	 		  p2p_target(pn532,&resp); // se il gateway mi risponde ok
+              	  	 		  if (resp == node_id_verified){
+              	  	 			  keyexc->keyexc_status = KEYEXC_NODE_ID_VERIFIED; //aggiorno lo status
+
+              	  	 		  }
+              	  	 		  else { // if(resp == node__id_failed)
+              	  	 			 keyexc->keyexc_status = KEYEXC_NODE_ID_FAILED;
+              	  	 			 return -1;
+              	  	 		  }
+              	  	 		  /** KEY TYPE **/
+              	  	 		 p2p_initiator(pn532,&key_type_request,1); // dico al gateway di quale tipo di chiave ho bisogno
+              	  	 		 p2p_target(pn532,&resp); // se mi risponde ok,
+              	  	 		 if (resp == key_type){
+              	  	 			 	keyexc->keyexc_status = KEYEXC_TYPE_VERIFIED; //aggiorno lo status
+
+              	  	 		}
+              	  	 		else {
+              	  	 			  keyexc->keyexc_status = KEYEXC_TYPE_FAILED;
+              	  	 			  return -1;
+              	  	 	    }
+              	  	 		 /** KEY PAYLOAD **/
+
+              	  	 		 p2p_initiator(pn532,&key_payload_request,1); // il sensore  chiede al gateway la chiave
+              	  	 		 p2p_target(pn532, keyexc->key_payload);
+              	  	 		 keyexc->keyexc_status = KEYEXC_PAYLOAD_VERIFIED;
+              	  	 		 //p2p_initiator(pn532,key_payload_verified,1);
+printf("fine sensor");
+              	  	 	//p2p_initiator(pn532,&ack,1);
+
+              	  	 			// keyexc->keyexc_status = KEYEXC_PAYLOAD_FAILED;
+              	  	 		//	p2p_initiator(pn532,key_payload_failed,1);
+
+               }
+
+printf("WAIT TIMEOUT");
+done = 1;
+
+     } while (done == 0);
+
+      printf("\n\nexit with status %02x   \n\n",keyexc->keyexc_status);
+    	for(int l=0;l<16;l++)
     	{
-    		printf("resp1[%i]: %02x",l,resp1[l]);
+    		printf("\npayload_recived[%i]: %02x\n" , l,keyexc->key_payload[l]);
     	}
+return 1;
+}
 
-    	for(l=0;l< (sizeof(resp2));l++)
-    	{
-    		printf("resp2[%i]: %02x",l,resp2[l]);
-    	}
 
-   }
 
 
 /**
  * @TODO use void * dev instead of pn532
  */
-void keyexc_init(keyexc_t * keyexc, pn532_t * pn532, keyexc_node_t node_type,keyexc_type_t keyexc_type)
+void keyexc_init(keyexc_t * keyexc, pn532_t * pn532, keyexc_node_t node_type,keyexc_type_t keyexc_type, uint8_t * node_id, uint8_t * gateway_id, uint8_t * keypayload)
  {
 keyexc->node_type = node_type;
 keyexc->keyexc_type= keyexc_type;
+keyexc->key_payload = keypayload;
+keyexc->node_id = node_id;
+keyexc->gateway_id = gateway_id;
+
 /**
  * @TODO timeout variable
  */
@@ -257,8 +417,32 @@ keyexc->keyexc_type= keyexc_type;
  */
 //keyexc->node_id=node_id;
 
+/*check key length */
+	if(keyexc_type == KEY_802154){
+		keyexc->key_size = 16;
+	}
+	if (keyexc_type == KEY_RPL){
 
- }
+	}
+	if (keyexc_type == KEY_COAP){
+
+	}
+
+	if(node_type == SENSOR){
+
+	}
+	if (node_type == GATEWAY){
+
+	}
+
+
+
+}
+
+
+
+
+
 int timeout_test (void)
 {
 	volatile int done = 0;

@@ -17,13 +17,33 @@
 
 
 typedef enum{
+	KEYEXC_IDLE,
+	KEYEXC_ACK_RECEIVED,
+	KEYEXC_ACK_FAILED,
 
-	ACK_RECEIVE,
-	ID_VERIFIED,
+	KEYEXC_GATEWAY_ID_REQUEST_RECEIVED,
+	KEYEXC_GATEWAY_ID_REQUEST_FAILED,
+	KEYEXC_GATEWAY_ID_VERIFIED,
+	KEYEXC_GATEWAY_ID_FAILED,
 
+	KEYEXC_NODE_ID_REQUEST_RECEIVED,
+	KEYEXC_NODE_ID_REQUEST_FAILED,
+	KEYEXC_NODE_ID_VERIFIED,
+	KEYEXC_NODE_ID_FAILED,
 
+	KEYEXC_TYPE_REQUEST_RECEIVED,
+	KEYEXC_TYPE_REQUEST_FAILED,
+	KEYEXC_TYPE_VERIFIED,
+	KEYEXC_TYPE_FAILED,
 
+	KEYEXC_PAYLOAD_REQUEST_RECEIVED,
+		KEYEXC_PAYLOAD_REQUEST_FAILED,
+		KEYEXC_PAYLOAD_VERIFIED,
+		KEYEXC_PAYLOAD_FAILED,
 } keyexc_status_t;
+
+
+
 typedef enum{
 	KEY_802154,
 	KEY_RPL,
@@ -40,24 +60,22 @@ typedef struct {
 
 
 	keyexc_node_t node_type;
-	uint8_t node_id[4];
+	uint8_t * node_id;
+	uint8_t * gateway_id;
 	unsigned long keyexc_timeout;
 	keyexc_type_t keyexc_type;
 	keyexc_status_t keyexc_status;
-
+	uint8_t * key_payload;
+	unsigned int key_size;
 }keyexc_t;
 
 
 
 
-void keyexc(keyexc_t * keyexc, pn532_t * pn532);
-void keyexc_init(keyexc_t * keyexc, pn532_t * pn532, keyexc_node_t node_type, keyexc_type_t keyexc_type);
+int keyexc(keyexc_t * keyexc, pn532_t * pn532);
+void keyexc_init(keyexc_t * keyexc, pn532_t * pn532, keyexc_node_t node_type, keyexc_type_t keyexc_type, uint8_t * node_id, uint8_t * gateway_id, uint8_t * keypayload );
 
-
-
-//int timeout_test (void);
-
-
+int timeout_test(void);
 
 #ifdef __cplusplus
 }
