@@ -80,6 +80,11 @@
 #define OPT_AES_ENCRYPTION          (0)
 
 /**
+ * @brief   Encryption key length in bytes (128 bit AES encryption)
+ */
+#define XBEE_ENCRYPTION_KEY_LEN     (16U)
+
+/**
  * @brief   States of the internal FSM for handling incoming UART frames
  *
  * Incoming data frames on the UART interfaces are handled using a finite state
@@ -135,9 +140,16 @@ typedef struct {
     uint8_t rx_buf[XBEE_MAX_PKT_LENGTH];/**< receiving data buffer */
     uint16_t rx_count;                  /**< counter for ongoing transmission */
     uint16_t rx_limit;                  /**< size RX frame transferred */
+<<<<<<< HEAD
     /* AES encryption configuration */
     uint8_t * aes_key;                   /**< pointer to the AES key buffer */
     unsigned int encrypt_status;         /**< status of encryption: (1) active (0) deactivate */
+=======
+
+    /* optional encryption status */
+    unsigned int encrypt;               /**< Current state of encryption */
+
+>>>>>>> 0e12d75... drivers/xbee: encryption support review
 } xbee_t;
 
 /**
