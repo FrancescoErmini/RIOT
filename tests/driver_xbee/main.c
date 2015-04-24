@@ -102,6 +102,16 @@ int main(void)
         puts("Error initializing xbee device driver");
         return -1;
     }
+    /* optionally, use encryptin */
+    #ifdef OPT_ENCRYPTION
+        ng_netconf_enable_t encrypt = NETCONF_ENABLE;       //turn on the encyption
+        //ng_netconf_enable_t encrypt = NETCONF_DISABLE;    //turn off the encryption
+        static  uint8_t key_buf[16]={0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
+                     0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,};
+        dev.driver->set((ng_netdev_t *)&dev,NETCONF_OPT_ENCRYPTION, &encrypt,1);
+        dev.driver->set((ng_netdev_t *)&dev,NETCONF_OPT_ENCRYPTION_KEY,key_buf,sizeof(key_buf));
+    #endif
+
     /* start MAC layer */
     iface = ng_nomac_init(nomac_stack, sizeof(nomac_stack), PRIORITY_MAIN - 3,
                           "xbee_l2", (ng_netdev_t *)&dev);

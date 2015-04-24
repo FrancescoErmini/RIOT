@@ -130,6 +130,9 @@ typedef struct {
     uint8_t rx_buf[XBEE_MAX_PKT_LENGTH];/**< receiving data buffer */
     uint16_t rx_count;                  /**< counter for ongoing transmission */
     uint16_t rx_limit;                  /**< size RX frame transferred */
+    /* AES encryption configuration */
+    unsigned int encrypt;               /**< Current state of encryption: 
+                                         *   (1) activate (0) deactivate */
 } xbee_t;
 
 /**
