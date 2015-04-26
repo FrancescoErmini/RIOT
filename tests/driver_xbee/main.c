@@ -132,6 +132,7 @@ int main(void)
     #endif
 
     /* start the shell */
+    puts("Initialization OK, starting shell now");
     shell_init(&shell, NULL, SHELL_BUFSIZE, shell_read, shell_put);
     shell_run(&shell);
 

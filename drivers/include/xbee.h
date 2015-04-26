@@ -67,17 +67,12 @@
 /**
  * @brief   Default PAN ID used after initialization
  */
-#define XBEE_DEFAULT_PANID          (0x0001)
+#define XBEE_DEFAULT_PANID          (0x0023)
 
 /**
  * @brief   Default channel used after initialization
  */
-#define XBEE_DEFAULT_CHANNEL        (11U)
-
-/**
-  * @brief  Set this flag to 1 allows the use of AES encryption in the Xbee Driver
-  */
-#define OPT_ENCRYPTION          (0)
+#define XBEE_DEFAULT_CHANNEL        (17U)
 
 /**
  * @brief   Encryption key length in bytes (128 bit AES encryption)
@@ -140,16 +135,10 @@ typedef struct {
     uint8_t rx_buf[XBEE_MAX_PKT_LENGTH];/**< receiving data buffer */
     uint16_t rx_count;                  /**< counter for ongoing transmission */
     uint16_t rx_limit;                  /**< size RX frame transferred */
-<<<<<<< HEAD
-    /* AES encryption configuration */
-    uint8_t * aes_key;                   /**< pointer to the AES key buffer */
-    unsigned int encrypt_status;         /**< status of encryption: (1) active (0) deactivate */
-=======
 
     /* optional encryption status */
     unsigned int encrypt;               /**< Current state of encryption */
 
->>>>>>> 0e12d75... drivers/xbee: encryption support review
 } xbee_t;
 
 /**
