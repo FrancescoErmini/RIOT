@@ -77,7 +77,7 @@
 /**
   * @brief  Set this flag to 1 allows the use of AES encryption in the Xbee Driver
   */
-#define OPT_AES_ENCRYPTION          (0)
+#define OPT_ENCRYPTION          (0)
 
 /**
  * @brief   Encryption key length in bytes (128 bit AES encryption)
