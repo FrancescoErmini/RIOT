@@ -67,12 +67,13 @@ typedef struct {
 	keyexc_status_t keyexc_status;
 	uint8_t * key_payload;
 	unsigned int key_size;
+	pn532_t * dev;
 }keyexc_t;
 
 
 
 
-int keyexc(keyexc_t * keyexc, pn532_t * pn532);
+int keyexc(keyexc_t * keyexc);
 void keyexc_init(keyexc_t * keyexc, pn532_t * pn532, keyexc_node_t node_type, keyexc_type_t keyexc_type, uint8_t * node_id, uint8_t * gateway_id, uint8_t * keypayload );
 
 int timeout_test(void);

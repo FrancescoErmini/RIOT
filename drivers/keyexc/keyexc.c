@@ -196,8 +196,8 @@ static void callback(void *done_)
     *done = 1;
 }
 
-int keyexc(keyexc_t * keyexc, pn532_t * pn532)
- {
+int keyexc(keyexc_t * keyexc)
+ {	pn532_t * pn532 = keyexc ->dev;
 	pn532_initialization(pn532);
 
 	uint8_t resp = 0x00;
@@ -409,6 +409,7 @@ keyexc->key_payload = keypayload;
 keyexc->node_id = node_id;
 keyexc->gateway_id = gateway_id;
 
+keyexc->dev = pn532;
 /**
  * @TODO timeout variable
  */
