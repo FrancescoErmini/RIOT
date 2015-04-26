@@ -164,19 +164,6 @@ extern const ng_netdev_driver_t xbee_driver;
 int xbee_init(xbee_t *dev, uart_t uart, uint32_t baudrate,
               gpio_t sleep_pin, gpio_t status_pin);
 
-#if OPT_AES_ENCRYPTION
-/**
- * @brief Configure AES encryption for the given Xbee Device
- * @param[out] dev              Xbee device to configure
- * @param[in] key_buf           Address where the key payload is stored
- * @param[in] encryption_toggle 0 - turn off the Xbee encryption
- *                              1 - turn on  the Xbee encryption
- * @return                      0 on success
- * @return                      -ENODEV on invalid device descriptor
- * @return                      -EINVAL on invalid arguments
- */
-int xbee_encrypt_config(xbee_t * dev, uint8_t * key_buf, unsigned int encryption_toggle);
-#endif
 
 #ifdef __cplusplus
 }
