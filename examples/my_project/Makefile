@@ -1,4 +1,4 @@
-APPLICATION = driver_xbee
+APPLICATION = key_exchange
 BOARD ?= udoo
 PORT= /dev/cu.SLAB_USBtoUART
 RIOTBASE ?= $(CURDIR)/../..
@@ -32,7 +32,7 @@ USEMODULE += xbee
 USEMODULE += ng_netbase
 USEMODULE += ng_nomac
 USEMODULE += ng_pktdump
-#USEMODULE += ng_netif
+USEMODULE += ng_netif
 USEMODULE += shell
 USEMODULE += shell_commands 
 #USEMODULE += ng_netif
@@ -40,7 +40,7 @@ USEMODULE += shell_commands
 #USEMODULE += net_if
 #USEMODULE += ps
 #USE_MODUE += random
-#USEMODULE += vtimer
+USEMODULE += vtimer
 USEMODULE += pn532
 USEMODULE += keyexc
 

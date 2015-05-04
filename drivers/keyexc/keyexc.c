@@ -111,7 +111,7 @@ int p2p_initiator(pn532_t * pn532, uint8_t * message,uint8_t size_mess){
 					printf("Configuration SAM didn't end well! HALT");
 					while(1);
 				}
-delay(3000);
+delay(1000);
 printf("\n\n\nInitializing PN532 as Initiator!\n\n\n");
 	uint8_t actpass = 0x01;	//Active mode
 	uint8_t br = 0x02;		//424 kbps
@@ -384,6 +384,8 @@ printf("fine sensor");
 
 printf("WAIT TIMEOUT");
 done = 1;
+pn532_ss_off(pn532->spi_cs);
+spi_poweroff(SPI_0);
 
      } while (done == 0);
 
