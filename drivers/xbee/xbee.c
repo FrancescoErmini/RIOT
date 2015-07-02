@@ -23,13 +23,15 @@
 #include <string.h>
 
 #include "xbee.h"
+#include "mutex.h"
 #include "hwtimer.h"
 #include "msg.h"
-#include "net/eui64.h"
-#include "net/ng_ieee802154.h"
+#include "periph/uart.h"
+#include "periph/gpio.h"
 #include "periph/cpuid.h"
+#include "net/ng_netbase.h"
 
-#define ENABLE_DEBUG    (0)
+#define ENABLE_DEBUG    (1)
 #include "debug.h"
 
 /**
@@ -290,26 +292,6 @@ static int _set_addr(xbee_t *dev, uint8_t *val, size_t len)
     return -ECANCELED;
 }
 
-static int _set_addr_len(xbee_t *dev, uint16_t *val, size_t len)
-{
-    if (len != sizeof(uint16_t)) {
-        return -EOVERFLOW;
-    }
-
-    switch (*val) {
-        case 8:
-            dev->addr_flags |= XBEE_ADDR_FLAGS_LONG;
-            break;
-        case 2:
-            dev->addr_flags &= ~XBEE_ADDR_FLAGS_LONG;
-            break;
-        default:
-            return -EINVAL;
-    }
-
-    return sizeof(uint16_t);
-}
-
 static int _get_channel(xbee_t *dev, uint8_t *val, size_t max)
 {
     uint8_t cmd[2];
@@ -403,6 +385,52 @@ static int _set_proto(xbee_t *dev, uint8_t *val, size_t len)
     return sizeof(ng_nettype_t);
 }
 
+static int _set_encryption(xbee_t *dev, uint8_t *val, size_t len)
+{  puts("dentro set encrypt");
+   // dev->encrypt = *val; //store the current encryption status
+    uint8_t cmd[3];
+    resp_t resp;
+/* get the current state of Encryption */
+            cmd[0] = 'E';
+            cmd[1] = 'E'; puts("prima di api at command: read EE");
+            _api_at_cmd(dev, cmd, 2, &resp); puts("dopo api at command: read EE");
+
+            printf("resp.status[]: %02x", resp.status);
+            printf("val[0] : %02x",val[0]);
+printf("resp.data[]: %02x", resp.data[0]);
+/* Prevent writing the same value in EE. */
+    if (val[0] != resp.data[0] ){
+        cmd[0] = 'E';
+        cmd[1] = 'E';
+        cmd[2] = val[0];  puts("prima di api at command: set EE 1");
+        _api_at_cmd(dev, cmd, 3, &resp); puts("dopo di api at command: set EE 1");
+    }
+    if (resp.status == 0) {
+        return 2; puts("fine _set_encryption");
+    }
+    return -ECANCELED;
+}
+
+static int _set_encryption_key(xbee_t *dev, uint8_t *val, size_t len)
+{ puts("dentro set encrypt key");
+        uint8_t cmd[18];
+        resp_t resp;
+        if (len != 16) { //the AES key is 128bit, 16 byte
+            return  -EINVAL;
+        }
+        cmd[0] = 'K';
+        cmd[1] = 'Y';
+
+       for(int i=0;i < 16;i++){ /* Append the key to the KY API AT command */
+           cmd[i+2]=val[i];
+       }
+        _api_at_cmd(dev, cmd, 18, &resp);
+        if (resp.status == 0) {
+            return 2;
+        }
+        return -ECANCELED;
+}
+
 /*
  * Driver's "public" functions
  */
@@ -425,7 +453,6 @@ int xbee_init(xbee_t *dev, uart_t uart, uint32_t baudrate,
     dev->reset_pin = reset_pin;
     dev->sleep_pin = sleep_pin;
     /* set default options */
-    dev->addr_flags = 0;
     dev->proto = XBEE_DEFAULT_PROTOCOL;
     dev->options = 0;
     /* initialize buffers and locks*/
@@ -438,22 +465,22 @@ int xbee_init(xbee_t *dev, uart_t uart, uint32_t baudrate,
         DEBUG("xbee: Error initializing UART\n");
         return -ENXIO;
     }
-    if (reset_pin != GPIO_UNDEF) {
-        if (gpio_init(reset_pin, GPIO_DIR_OUT, GPIO_NOPULL) < 0) {
+    if (reset_pin < GPIO_NUMOF) {
+        if (gpio_init_out(reset_pin, GPIO_NOPULL) < 0) {
             DEBUG("xbee: Error initializing RESET pin\n");
             return -ENXIO;
         }
         gpio_set(reset_pin);
     }
-    if (sleep_pin != GPIO_UNDEF) {
-        if (gpio_init(sleep_pin, GPIO_DIR_OUT, GPIO_NOPULL) < 0) {
+    if (sleep_pin < GPIO_NUMOF) {
+        if (gpio_init_out(sleep_pin, GPIO_NOPULL) < 0) {
             DEBUG("xbee: Error initializing SLEEP pin\n");
             return -ENXIO;
         }
         gpio_clear(sleep_pin);
     }
     /* if reset pin is connected, do a hardware reset */
-    if (reset_pin != GPIO_UNDEF) {
+    if (reset_pin < GPIO_NUMOF) {
         gpio_clear(reset_pin);
         hwtimer_wait(HWTIMER_TICKS(RESET_DELAY));
         gpio_set(reset_pin);
@@ -471,10 +498,24 @@ int xbee_init(xbee_t *dev, uart_t uart, uint32_t baudrate,
     /* exit command mode */
     _at_cmd(dev, "ATCN\r");
 
+    /* set default short address, use CPU ID if available */
+#if CPUID_ID_LEN
+    /* get CPU ID */
+    uint8_t id[CPUID_ID_LEN];
+    cpuid_get(id);
+    /* set address */
+    memset(dev->addr_short, 0, 2);
+    for (int i = 0; i < CPUID_ID_LEN; i++) {
+        dev->addr_short[i & 0x01] ^= id[i];
+    }
+#else
+    dev->addr_short[0] = (uint8_t)(XBEE_DEFAULT_SHORT_ADDR >> 8);
+    dev->addr_short[1] = (uint8_t)(XBEE_DEFAULT_SHORT_ADDR);
+#endif
+    _set_addr(dev, dev->addr_short, 2);
     /* load long address (we can not set it, its read only for Xbee devices) */
-    _get_addr_long(dev, dev->addr_long.uint8, 8);
+    _get_addr_long(dev, dev->addr_long, 8);
     /* set default channel */
-    _set_addr(dev, &((dev->addr_long).uint8[6]), 2);
     tmp[1] = 0;
     tmp[0] = XBEE_DEFAULT_CHANNEL;
     _set_channel(dev, tmp, 2);
@@ -494,7 +535,7 @@ static inline bool _is_broadcast(ng_netif_hdr_t *hdr) {
 }
 
 static int _send(ng_netdev_t *netdev, ng_pktsnip_t *pkt)
-{
+{puts("send");
     xbee_t *dev = (xbee_t *)netdev;
     size_t size;
     size_t pos;
@@ -615,25 +656,8 @@ static int _get(ng_netdev_t *netdev, ng_netconf_opt_t opt,
             if (max_len < sizeof(uint16_t)) {
                 return -EOVERFLOW;
             }
-            if (dev->addr_flags & XBEE_ADDR_FLAGS_LONG) {
-                *((uint16_t *)value) = 8;
-            }
-            else {
-                *((uint16_t *)value) = 2;
-            }
+            *((uint16_t *)value) = 2;
             return sizeof(uint16_t);
-        case NETCONF_OPT_IPV6_IID:
-            if (max_len < sizeof(eui64_t)) {
-                return -EOVERFLOW;
-            }
-            if (dev->addr_flags & XBEE_ADDR_FLAGS_LONG) {
-                ng_ieee802154_get_iid(value, (uint8_t *)&dev->addr_long, 8);
-            }
-            else {
-                ng_ieee802154_get_iid(value, (uint8_t *)&dev->addr_short, 2);
-            }
-
-            return sizeof(eui64_t);
         case NETCONF_OPT_CHANNEL:
             return _get_channel(dev, (uint8_t *)value, max_len);
         case NETCONF_OPT_MAX_PACKET_SIZE:
@@ -662,15 +686,16 @@ static int _set(ng_netdev_t *netdev, ng_netconf_opt_t opt,
     switch (opt) {
         case NETCONF_OPT_ADDRESS:
             return _set_addr(dev, (uint8_t *)value, value_len);
-        case NETCONF_OPT_ADDR_LEN:
-        case NETCONF_OPT_SRC_LEN:
-            return _set_addr_len(dev, value, value_len);
         case NETCONF_OPT_CHANNEL:
             return _set_channel(dev, (uint8_t *)value, value_len);
         case NETCONF_OPT_NID:
             return _set_panid(dev, (uint8_t *)value, value_len);
         case NETCONF_OPT_PROTO:
             return _set_proto(dev, (uint8_t *)value, value_len);
+        case NETCONF_OPT_ENCRYPTION:
+            return _set_encryption(dev, (uint8_t *) value, value_len);
+        case NETCONF_OPT_ENCRYPTION_KEY:
+            return _set_encryption_key(dev, (uint8_t *)value, value_len);
         default:
             return -ENOTSUP;
     }
@@ -734,7 +759,7 @@ static void _isr_event(ng_netdev_t *netdev, uint32_t event_type)
         ng_netif_hdr_set_dst_addr(hdr, dev->addr_short, 2);
     }
     else {
-        ng_netif_hdr_set_dst_addr(hdr, dev->addr_long.uint8, 8);
+        ng_netif_hdr_set_dst_addr(hdr, dev->addr_long, 8);
     }
     pos = 3 + addr_len;
     /* allocate and copy payload */

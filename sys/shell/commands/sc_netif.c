@@ -24,8 +24,6 @@
 #include <string.h>
 
 #include "thread.h"
-#include "net/ng_ipv6/addr.h"
-#include "net/ng_ipv6/netif.h"
 #include "net/ng_netif.h"
 #include "net/ng_netapi.h"
 #include "net/ng_netconf.h"
@@ -52,8 +50,8 @@ static bool _is_number(char *str)
 
 static bool _is_iface(kernel_pid_t dev)
 {
-    kernel_pid_t ifs[NG_NETIF_NUMOF];
-    size_t numof = ng_netif_get(ifs);
+    size_t numof;
+    kernel_pid_t *ifs = ng_netif_get(&numof);
 
     for (size_t i = 0; i < numof; i++) {
         if (ifs[i] == dev) {
@@ -84,19 +82,7 @@ static void _set_usage(char *cmd_name)
 
 static void _flag_usage(char *cmd_name)
 {
-    printf("usage: %s <if_id> [-]{promisc|autoack|preload}\n", cmd_name);
-}
-
-static void _add_usage(char *cmd_name)
-{
-    printf("usage: %s <if_id> add [anycast|multicast|unicast] "
-           "<ipv6_addr>[/prefix_len]\n", cmd_name);
-}
-
-static void _del_usage(char *cmd_name)
-{
-    printf("usage: %s <if_id> del <ipv6_addr>\n",
-           cmd_name);
+    printf("usage: %s <if_id> [-]{promisc|autoack|preload}", cmd_name);
 }
 
 static void _print_netconf(ng_netconf_opt_t opt)
@@ -168,11 +154,6 @@ static void _netif_list(kernel_pid_t dev)
     ng_netconf_state_t state;
     ng_netconf_enable_t enable;
     bool linebreak = false;
-#ifdef MODULE_NG_IPV6_NETIF
-    ng_ipv6_netif_t *entry = ng_ipv6_netif_get(dev);
-    char ipv6_addr[NG_IPV6_ADDR_MAX_STR_LEN];
-#endif
-
 
     printf("Iface %2d  ", dev);
 
@@ -244,14 +225,9 @@ static void _netif_list(kernel_pid_t dev)
         linebreak = true;
     }
 
-    res = ng_netapi_get(dev, NETCONF_OPT_RAWMODE, 0, &enable, sizeof(enable));
-
-    if ((res >= 0) && (enable == NETCONF_ENABLE)) {
-        printf("RAWMODE  ");
-        linebreak = true;
-    }
-
 #ifdef MODULE_NG_IPV6_NETIF
+    ng_ipv6_netif_t *entry = ng_ipv6_netif_get(dev);
+
     if ((entry != NULL) && (entry->flags & NG_IPV6_NETIF_FLAGS_SIXLOWPAN)) {
         printf("6LO ");
         linebreak = true;
@@ -265,43 +241,10 @@ static void _netif_list(kernel_pid_t dev)
     res = ng_netapi_get(dev, NETCONF_OPT_SRC_LEN, 0, &u16, sizeof(u16));
 
     if (res >= 0) {
-        printf("Source address length: %" PRIu16 "\n           ", u16);
+        printf("Source address length: %" PRIu16 "\n            ", u16);
     }
 
-#ifdef MODULE_NG_IPV6_NETIF
-    for (int i = 0; i < NG_IPV6_NETIF_ADDR_NUMOF; i++) {
-        if (!ng_ipv6_addr_is_unspecified(&entry->addrs[i].addr)) {
-            printf("inet6 addr: ");
-
-            if (ng_ipv6_addr_to_str(ipv6_addr, &entry->addrs[i].addr,
-                                    NG_IPV6_ADDR_MAX_STR_LEN)) {
-                printf("%s/%" PRIu8 "  scope: ", ipv6_addr,
-                       entry->addrs[i].prefix_len);
-
-                if ((ng_ipv6_addr_is_link_local(&entry->addrs[i].addr))) {
-                    printf("local");
-                }
-                else {
-                    printf("global");
-                }
-
-                if (entry->addrs[i].flags & NG_IPV6_NETIF_ADDR_FLAGS_NON_UNICAST) {
-                    if (ng_ipv6_addr_is_multicast(&entry->addrs[i].addr)) {
-                        printf(" [multicast]");
-                    }
-                    else {
-                        printf(" [anycast]");
-                    }
-                }
-            }
-            else {
-                printf("error in conversion");
-            }
-
-            printf("\n           ");
-        }
-    }
-#endif
+    /* TODO: list IPv6 info */
 
     puts("");
 }
@@ -496,9 +439,6 @@ static int _netif_flag(char *cmd, kernel_pid_t dev, char *flag)
     else if (strcmp(flag, "autoack") == 0) {
         return _netif_set_flag(dev, NETCONF_OPT_AUTOACK, set);
     }
-    else if (strcmp(flag, "raw") == 0) {
-        return _netif_set_flag(dev, NETCONF_OPT_RAWMODE, set);
-    }
     else if (strcmp(flag, "6lo") == 0) {
 #ifdef MODULE_NG_IPV6_NETIF
         ng_ipv6_netif_t *entry = ng_ipv6_netif_get(dev);
@@ -533,118 +473,6 @@ static int _netif_flag(char *cmd, kernel_pid_t dev, char *flag)
 
     _flag_usage(cmd);
     return 1;
-}
-
-#ifdef MODULE_NG_IPV6_NETIF
-static uint8_t _get_prefix_len(char *addr)
-{
-    int prefix_len = 128;
-
-    while ((*addr != '/') && (*addr != '\0')) {
-        addr++;
-    }
-
-    if (*addr == '/') {
-        *addr = '\0';
-        prefix_len = atoi(addr + 1);
-
-        if ((prefix_len < 1) || (prefix_len > 128)) {
-            prefix_len = 128;
-        }
-    }
-
-    return prefix_len;
-}
-#endif
-
-static int _netif_add(char *cmd_name, kernel_pid_t dev, int argc, char **argv)
-{
-#ifdef MODULE_NG_IPV6_NETIF
-    enum {
-        _UNICAST = 0,
-        _MULTICAST,     /* multicast value just to check if given addr is mc */
-        _ANYCAST
-    } type = _UNICAST;
-    char *addr_str = argv[0];
-    ng_ipv6_addr_t addr;
-    uint8_t prefix_len;
-
-    if (argc > 1) {
-        if (strcmp(argv[0], "anycast") == 0) {
-            type = _ANYCAST;
-            addr_str = argv[1];
-        }
-        else if (strcmp(argv[0], "multicast") == 0) {
-            type = _MULTICAST;
-            addr_str = argv[1];
-        }
-        else if (strcmp(argv[0], "unicast") == 0) {
-            /* type already set to unicast */
-            addr_str = argv[1];
-        }
-        else {
-            _add_usage(cmd_name);
-            return 1;
-        }
-    }
-
-    prefix_len = _get_prefix_len(addr_str);
-
-    if (ng_ipv6_addr_from_str(&addr, addr_str) == NULL) {
-        puts("error: unable to parse IPv6 address.");
-        return 1;
-    }
-
-    if ((argc > 1) && (ng_ipv6_addr_is_multicast(&addr)) && (type != _MULTICAST)) {
-        puts("error: address was not a multicast address.");
-        return 1;
-    }
-
-    if (ng_ipv6_netif_add_addr(dev, &addr, prefix_len,
-                               (type == _ANYCAST) ?
-                               NG_IPV6_NETIF_ADDR_FLAGS_NON_UNICAST :
-                               NG_IPV6_NETIF_ADDR_FLAGS_UNICAST) == NULL) {
-        printf("error: unable to add IPv6 address\n");
-        return 1;
-    }
-
-    printf("success: added %s/%d to interface %" PRIkernel_pid "\n", addr_str,
-           prefix_len, dev);
-
-    return 0;
-#else
-    (void)cmd_name;
-    (void)dev;
-    (void)argc;
-    (void)argv;
-    puts("error: unable to add IPv6 address.");
-
-    return 1;
-#endif
-}
-
-static int _netif_del(kernel_pid_t dev, char *addr_str)
-{
-#ifdef MODULE_NG_IPV6_NETIF
-    ng_ipv6_addr_t addr;
-
-    if (ng_ipv6_addr_from_str(&addr, addr_str) == NULL) {
-        puts("error: unable to parse IPv6 address.");
-        return 1;
-    }
-
-    ng_ipv6_netif_remove_addr(dev, &addr);
-
-    printf("success: removed %s to interface %" PRIkernel_pid "\n", addr_str,
-           dev);
-
-    return 0;
-#else
-    (void)dev;
-    (void)addr_str;
-    puts("error: unable to delete IPv6 address.");
-    return 1;
-#endif
 }
 
 /* shell commands */
@@ -700,8 +528,8 @@ int _netif_send(int argc, char **argv)
 int _netif_config(int argc, char **argv)
 {
     if (argc < 2) {
-        kernel_pid_t ifs[NG_NETIF_NUMOF];
-        size_t numof = ng_netif_get(ifs);
+        size_t numof;
+        kernel_pid_t *ifs = ng_netif_get(&numof);
 
         for (size_t i = 0; i < numof; i++) {
             _netif_list(ifs[i]);
@@ -725,22 +553,9 @@ int _netif_config(int argc, char **argv)
 
                 return _netif_set(argv[0], dev, argv[3], argv[4]);
             }
-            else if (strcmp(argv[2], "add") == 0) {
-                if (argc < 4) {
-                    _add_usage(argv[0]);
-                    return 1;
-                }
 
-                return _netif_add(argv[0], (kernel_pid_t)dev, argc - 3, argv + 3);
-            }
-            else if (strcmp(argv[2], "del") == 0) {
-                if (argc < 4) {
-                    _del_usage(argv[0]);
-                    return 1;
-                }
+            /* TODO implement add for IP addresses */
 
-                return _netif_del((kernel_pid_t)dev, argv[3]);
-            }
             else {
                 return _netif_flag(argv[0], dev, argv[2]);
             }
@@ -751,10 +566,8 @@ int _netif_config(int argc, char **argv)
         }
     }
 
-    printf("usage: %s [<if_id>]\n", argv[0]);
+    printf("usage: %s <if_id>\n", argv[0]);
     _set_usage(argv[0]);
     _flag_usage(argv[0]);
-    _add_usage(argv[0]);
-    _del_usage(argv[0]);
     return 1;
 }
