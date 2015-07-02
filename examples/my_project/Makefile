@@ -46,6 +46,7 @@ USEMODULE += keyexc
 
 ifneq (,$(XBEE_UART))
   CFLAGS += -DXBEE_UART=$(XBEE_UART)
+	CFLAGS += -DDEVELHELP
 else
   # set default
   CFLAGS += -DXBEE_UART=UART_0

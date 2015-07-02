@@ -28,10 +28,10 @@
 #include "keyexc.h"
 #include "hwtimer.h"
 #ifndef _SENSOR
-#define _SENSOR (1)
+#define _SENSOR (0)
 #endif
 #ifndef _GATEWAY
-#define _GATEWAY (0)
+#define _GATEWAY (1)
 #endif
 #define KEYEXC 1
 #define OPT_ENCRYPTION 1
@@ -89,7 +89,7 @@ void shell_put(int c)
 {
     putchar((char)c);
 }
-#if _SENSOR
+
 void keyexc_set_key(xbee_t * dev)
 {  printf("\n disabilito l'interrupt");
 //	gpio_irq_disable(GPIO_15);
@@ -102,6 +102,11 @@ ng_netconf_enable_t encrypt_status = NETCONF_ENABLE;
 dev->driver->set((ng_netdev_t *)dev,NETCONF_OPT_ENCRYPTION, &encrypt_status,1);
 dev->driver->set((ng_netdev_t *)dev,NETCONF_OPT_ENCRYPTION_KEY,key_buf,sizeof(key_buf));
 
+}
+void keyexc_off_key(xbee_t * dev)
+{
+	ng_netconf_enable_t encrypt_status = NETCONF_DISABLE;
+	      dev->driver->set((ng_netdev_t *)dev,NETCONF_OPT_ENCRYPTION, &encrypt_status,1);
 }
 void keyexc_cb(void *arg){
 	/*printf("THE NODE IS ASKING A NEW KEY. \n INITIALIZE PN532, wait 10 sec... ");
@@ -122,7 +127,7 @@ void keyexc_cb(void *arg){
         printf("\nFinish.");
     }
 
-#endif
+
 /**
  * @brief   Maybe you are a golfer?!
  */
@@ -132,7 +137,7 @@ void keyexc_cb(void *arg){
 
 int main(void)
 {
-	#if _SENSOR
+
     kernel_pid_t iface;
     int res;
     shell_t shell;
@@ -173,13 +178,46 @@ int main(void)
     /* optionally en/disable and set Xbee encryption key */
 
 
+/***nEW**/
+
+    /* start the shell */
+     puts("Initialization OK, starting shell now");
+     printf("\n\n Start Sending.....\n\n");
+     //addr_dest=2222 -> 7E 00 0A 01 01 22 22 00 68 65 6C 6C 6F A5
+     //
+      uint8_t addr[8]={0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+
+      ng_pktsnip_t *pkt;
+      ng_netif_hdr_t *nethdr;
+      char data[]=" senza_cifratura";
+     size_t addr_len = 8;
+
+     /* put packet together */
+      pkt = ng_pktbuf_add(NULL,(char *)data, strlen(data), NG_NETTYPE_UNDEF);
+      pkt = ng_pktbuf_add(pkt, NULL, sizeof(ng_netif_hdr_t) + addr_len,
+                          NG_NETTYPE_NETIF);
+      nethdr = (ng_netif_hdr_t *)pkt->data;
+      ng_netif_hdr_init(nethdr, 0, addr_len);
+
+      ng_netif_hdr_set_dst_addr(nethdr, addr, addr_len);
+
+
+      keyexc_off_key(&dev);
+      /* and send it */
+     for(int i=0;i<10;i++){
+     	printf("\npkt_normal[%i]",i);
+      ng_netapi_send(iface, pkt);
+      hwtimer_wait(1000*2000);
+     }
+
+    /***/
 
 
 
 
 
-
-    puts("configure gpio interrupts");
+    //puts("configure gpio interrupts");
+#if _SENSOR
 	printf("THE NODE IS ASKING A NEW KEY. \n INITIALIZE PN532, wait 10 sec... ");
 	 uint8_t node_id []  = {0xAA,0xAA,0xAA,0xAA};
 	        uint8_t gateway_id[] = {0x01,0x01,0x01,0x01};
@@ -199,6 +237,8 @@ int main(void)
 
 
 #if _GATEWAY
+
+
     uint8_t node_id []  = {0xAA,0xAA,0xAA,0xAA};
     uint8_t gateway_id[] = {0x01,0x01,0x01,0x01};
 uint8_t key_buf[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
@@ -206,13 +246,17 @@ uint8_t key_buf[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
 
     keyexc_init(&key, &pn532,GATEWAY, KEY_802154, node_id, gateway_id, key_buf);
     keyexc(&key);
-    return 0;
+
+    keyexc_set_key(&dev);
+
+
+
 #endif
 
 
 #if _SENSOR
 
-    /* start the shell */
+    /*
     puts("Initialization OK, starting shell now");
     printf("\n\n Start Sending.....\n\n");
     //addr_dest=2222 -> 7E 00 0A 01 01 22 22 00 68 65 6C 6C 6F A5
@@ -224,7 +268,7 @@ uint8_t key_buf[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
      char data[]="hello";
     size_t addr_len = 8;
 
-    /* put packet together */
+
      pkt = ng_pktbuf_add(NULL,(char *)data, strlen(data), NG_NETTYPE_UNDEF);
      pkt = ng_pktbuf_add(pkt, NULL, sizeof(ng_netif_hdr_t) + addr_len,
                          NG_NETTYPE_NETIF);
@@ -232,11 +276,13 @@ uint8_t key_buf[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
      ng_netif_hdr_init(nethdr, 0, addr_len);
 
      ng_netif_hdr_set_dst_addr(nethdr, addr, addr_len);
-     /* and send it */
-    for ( int i= 0; i<300; i++){
-    	printf("\nmess[%i]",i);
+     */
+
+    for(int i=0;i<30;i++)
+    {
+    	printf("\npkt_encrypt[%i]",i);
      ng_netapi_send(iface, pkt);
-     hwtimer_wait(1000*5000);
+     hwtimer_wait(1000*2000);
     }
     return 0;
 #endif

@@ -71,7 +71,7 @@ int id_check(keyexc_t * keyexc, uint8_t * id_received)
 void pn532_initialization(pn532_t * pn532){
     puts("PN532 init");
     hwtimer_wait(10*1000*1000);
-    pn532_init_master(pn532, SPI_0, SPI_CONF_FIRST_RISING, SPI_SPEED_1MHZ, GPIO_0 );
+    pn532_init_master(pn532, SPI_0, SPI_CONF_FIRST_RISING, SPI_SPEED_1MHZ, GPIO_17 );
 
     	printf("End initialize!\n");
 
