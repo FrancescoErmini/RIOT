@@ -717,6 +717,10 @@ static int _set(ng_netdev_t *netdev, ng_netconf_opt_t opt,
             return _set_panid(dev, (uint8_t *)value, value_len);
         case NETCONF_OPT_PROTO:
             return _set_proto(dev, (uint8_t *)value, value_len);
+        case NETCONF_OPT_ENCRYPTION:
+            return _set_encryption(dev, (uint8_t *) value, value_len);
+        case NETCONF_OPT_ENCRYPTION_KEY:
+            return _set_encryption_key(dev, (uint8_t *)value, value_len);            
         default:
             return -ENOTSUP;
     }
