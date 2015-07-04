@@ -403,6 +403,52 @@ static int _set_proto(xbee_t *dev, uint8_t *val, size_t len)
     return sizeof(ng_nettype_t);
 }
 
+static int _set_encryption(xbee_t *dev, uint8_t *val, size_t len)
+{  puts("dentro set encrypt");
+   // dev->encrypt = *val; //store the current encryption status
+    uint8_t cmd[3];
+    resp_t resp;
+/* get the current state of Encryption */
+            cmd[0] = 'E';
+            cmd[1] = 'E'; puts("prima di api at command: read EE");
+            _api_at_cmd(dev, cmd, 2, &resp); puts("dopo api at command: read EE");
+
+            printf("resp.status[]: %02x", resp.status);
+            printf("val[0] : %02x",val[0]);
+printf("resp.data[]: %02x", resp.data[0]);
+/* Prevent writing the same value in EE. */
+    if (val[0] != resp.data[0] ){
+        cmd[0] = 'E';
+        cmd[1] = 'E';
+        cmd[2] = val[0];  puts("prima di api at command: set EE 1");
+        _api_at_cmd(dev, cmd, 3, &resp); puts("dopo di api at command: set EE 1");
+    }
+    if (resp.status == 0) {
+        return 2; puts("fine _set_encryption");
+    }
+    return -ECANCELED;
+}
+
+static int _set_encryption_key(xbee_t *dev, uint8_t *val, size_t len)
+{ puts("dentro set encrypt key");
+        uint8_t cmd[18];
+        resp_t resp;
+        if (len != 16) { //the AES key is 128bit, 16 byte
+            return  -EINVAL;
+        }
+        cmd[0] = 'K';
+        cmd[1] = 'Y';
+
+       for(int i=0;i < 16;i++){ /* Append the key to the KY API AT command */
+           cmd[i+2]=val[i];
+       }
+        _api_at_cmd(dev, cmd, 18, &resp);
+        if (resp.status == 0) {
+            return 2;
+        }
+        return -ECANCELED;
+}
+
 /*
  * Driver's "public" functions
  */
