@@ -18,63 +18,51 @@
 
 typedef enum{
 	KEYEXC_IDLE,
-	KEYEXC_ACK_RECEIVED,
-	KEYEXC_ACK_FAILED,
+	KEYEXC_PROTO,
+	KEYEXC_802154,
+	KEYEXC_RPL,
+	KEYEXC_COAP,
 
-	KEYEXC_GATEWAY_ID_REQUEST_RECEIVED,
-	KEYEXC_GATEWAY_ID_REQUEST_FAILED,
-	KEYEXC_GATEWAY_ID_VERIFIED,
-	KEYEXC_GATEWAY_ID_FAILED,
-
-	KEYEXC_NODE_ID_REQUEST_RECEIVED,
-	KEYEXC_NODE_ID_REQUEST_FAILED,
-	KEYEXC_NODE_ID_VERIFIED,
-	KEYEXC_NODE_ID_FAILED,
-
-	KEYEXC_TYPE_REQUEST_RECEIVED,
-	KEYEXC_TYPE_REQUEST_FAILED,
-	KEYEXC_TYPE_VERIFIED,
-	KEYEXC_TYPE_FAILED,
-
-	KEYEXC_PAYLOAD_REQUEST_RECEIVED,
-		KEYEXC_PAYLOAD_REQUEST_FAILED,
-		KEYEXC_PAYLOAD_VERIFIED,
-		KEYEXC_PAYLOAD_FAILED,
 } keyexc_status_t;
 
-
-
-typedef enum{
-	KEY_802154,
-	KEY_RPL,
-	KEY_COAP,
-}keyexc_type_t;
+typedef enum {
+	IEEE802154,
+	RPL,
+	COAP,
+}keyexc_proto_t;
 
 typedef enum {
 	GATEWAY,
 	SENSOR,
 }keyexc_node_t;
 
+typedef struct {
+uint8_t channel;
+uint8_t panid[2];
+uint8_t short_address[2];
+uint8_t long_address[8];
+uint8_t key[16];
+}keyexc_802154_t;
 
 typedef struct {
+			keyexc_node_t node_type;
+			uint8_t id;
+			pn532_t * dev;
+			keyexc_proto_t proto;
+			//unsigned long keyexc_timeout;
+			keyexc_status_t status;
+			uint8_t * data;
+			uint16_t rx_count;
 
 
-	keyexc_node_t node_type;
-	uint8_t * node_id;
-	uint8_t * gateway_id;
-	unsigned long keyexc_timeout;
-	keyexc_type_t keyexc_type;
-	keyexc_status_t keyexc_status;
-	uint8_t * key_payload;
-	unsigned int key_size;
-	pn532_t * dev;
 }keyexc_t;
 
 
 
 
 int keyexc(keyexc_t * keyexc);
-void keyexc_init(keyexc_t * keyexc, pn532_t * pn532, keyexc_node_t node_type, keyexc_type_t keyexc_type, uint8_t * node_id, uint8_t * gateway_id, uint8_t * keypayload );
+
+void keyexc_init(keyexc_t * keyexc, pn532_t * pn532, keyexc_node_t node_type, uint8_t  id, uint8_t * data);
 
 int timeout_test(void);
 

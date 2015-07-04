@@ -354,3 +354,42 @@ void auto_init(void)
     ng_ipv6_netif_init_by_dev();
 #endif
 }
+#ifdef MODULE_NG_UDP
+    DEBUG("Auto init UDP module.\n");
+    ng_udp_init();
+#endif
+#ifdef MODULE_FIB
+    DEBUG("Auto init FIB module.\n");
+    fib_init();
+#endif
+
+
+/* initialize network devices */
+#ifdef MODULE_AUTO_INIT_NG_NETIF
+
+#ifdef MODULE_NG_AT86RF2XX
+    extern void auto_init_ng_at86rf2xx(void);
+    auto_init_ng_at86rf2xx();
+#endif
+
+#ifdef MODULE_XBEE
+    extern void auto_init_xbee(void);
+    auto_init_xbee();
+#endif
+
+#ifdef MODULE_KW2XRF
+    extern void auto_init_kw2xrf(void);
+    auto_init_kw2xrf();
+#endif
+
+#ifdef MODULE_NG_NETDEV_ETH
+    extern void auto_init_ng_netdev_eth(void);
+    auto_init_ng_netdev_eth();
+#endif
+
+#endif /* MODULE_AUTO_INIT_NG_NETIF */
+
+#ifdef MODULE_NG_IPV6_NETIF
+    ng_ipv6_netif_init_by_dev();
+#endif
+}

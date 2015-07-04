@@ -16,4 +16,8 @@ ifneq (,$(filter dev_eth_autoinit,$(USEMODULE)))
 DIRS += $(RIOTBASE)/sys/auto_init/dev_eth
 endif
 
+<<<<<<< Updated upstream
 include $(RIOTBASE)/Makefile.base
+=======
+include $(RIOTBASE)/Makefile.base
+>>>>>>> Stashed changes

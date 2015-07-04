@@ -55,4 +55,8 @@ int main(void)
     shell_run(&shell);
 
     return 0;
+<<<<<<< Updated upstream
 }
+=======
+}
+>>>>>>> Stashed changes
