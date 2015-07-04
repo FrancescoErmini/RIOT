@@ -704,6 +704,10 @@ static int _set(gnrc_netdev_t *netdev, netopt_t opt, void *value, size_t value_l
             return _set_panid(dev, (uint8_t *)value, value_len);
         case NETOPT_PROTO:
             return _set_proto(dev, (uint8_t *)value, value_len);
+        case NETCONF_OPT_ENCRYPTION:
+            return _set_encryption(dev, (uint8_t *) value, value_len);
+        case NETCONF_OPT_ENCRYPTION_KEY:
+            return _set_encryption_key(dev, (uint8_t *)value, value_len);            
         default:
             return -ENOTSUP;
     }
