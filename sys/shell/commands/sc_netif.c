@@ -89,7 +89,9 @@ static void _set_usage(char *cmd_name)
          "       * \"pan_id\" - alias for \"nid\"\n"
          "       * \"power\" - TX power in dBm\n"
          "       * \"src_len\" - sets the source address length in byte\n"
-         "       * \"state\" - set the device state\n");
+         "       * \"state\" - set the device state\n"
+         "       * \"encrypt\" - set the encryption on-off\n"
+         "       * \"key\" - set the 128 bit encryption key\n");
 }
 
 static void _mtu_usage(char *cmd_name)
@@ -148,6 +150,13 @@ static void _print_netopt(netopt_t opt)
 
         case NETOPT_TX_POWER:
             printf("TX power [in dBm]");
+            break;
+        case NETCONF_OPT_ENCRYPTION:
+            printf("encryption");
+            break;
+
+        case NETCONF_OPT_ENCRYPTION_KEY:
+            printf("encryption key");
             break;
 
         case NETOPT_CSMA_RETRIES:
@@ -559,6 +568,72 @@ static int _netif_set_state(kernel_pid_t dev, char *state_str)
     return 0;
 }
 
+static int _netif_set_encrypt(kernel_pid_t dev, ng_netconf_opt_t opt,
+                           char *encrypt_str)
+{
+    ng_netconf_enable_t set;
+    size_t size = 1;
+    if ((strcmp("on", encrypt_str) == 0) || (strcmp("ON", encrypt_str) == 0)) {
+        set = NETCONF_ENABLE;
+    }
+    else if ((strcmp("off", encrypt_str) == 0) || (strcmp("OFF", encrypt_str) == 0)) {
+        set = NETCONF_DISABLE;
+    }
+    else {
+        puts("usage: ifconfig <if_id> set encryption [on|off]");
+        return 1;
+    }
+
+    if (ng_netapi_set(dev, opt, 0, &set, size) < 0) {
+        printf("error: unable to set ");
+        _print_netconf(opt);
+        puts("");
+        return 1;
+    }
+
+    printf("success: set ");
+    _print_netconf(opt);
+    printf(" on interface %" PRIkernel_pid " to %s\n", dev, encrypt_str);
+
+    return 0;
+}
+
+static int _netif_set_encrypt_key(kernel_pid_t dev, ng_netconf_opt_t opt,
+                           char *key_str)
+{
+    size_t key_len = strlen(key_str);
+    uint8_t key[key_len];
+    if (key_len == 16U) {
+        printf("\nNotice: setting 128 bit key.");
+    }
+    else if (key_len == 32U) {
+        printf("\nNotice: setting 256 bit key.");
+    }
+    else {
+        printf("error: invalid key size.");
+        return 1;
+    }
+    /*Convert any char from ASCII table in hex format*/
+   for (int i = 0; i < key_len; i++) {
+       key[i] = (uint8_t)key_str[i];
+   }
+
+    if (ng_netapi_set(dev, opt, 0, key, key_len) < 0) {
+        printf("error: unable to set ");
+        _print_netconf(opt);
+        puts("");
+        return 1;
+    }
+
+    printf("success: set ");
+    _print_netconf(opt);
+    printf(" on interface %" PRIkernel_pid " to \n", dev);
+    for(int i=0;i<key_len;i++){//print the hex value of the key
+    printf("%02x",key[i]);
+    }
+    puts("");
+    return 0;
+}
 static int _netif_set(char *cmd_name, kernel_pid_t dev, char *key, char *value)
 {
     if ((strcmp("addr", key) == 0) || (strcmp("addr_short", key) == 0)) {
@@ -586,11 +661,11 @@ static int _netif_set(char *cmd_name, kernel_pid_t dev, char *key, char *value)
     else if (strcmp("state", key) == 0) {
         return _netif_set_state(dev, value);
     }
-    else if (strcmp("csma_retries", key) == 0) {
-        return _netif_set_u8(dev, NETOPT_CSMA_RETRIES, value);
+    else if (strcmp("encrypt", key) == 0) {
+          return _netif_set_encrypt(dev, NETCONF_OPT_ENCRYPTION, value);
     }
-    else if (strcmp("cca_threshold", key) == 0) {
-        return _netif_set_u8(dev, NETOPT_CCA_THRESHOLD, value);
+    else if (strcmp("key", key) == 0) {
+          return _netif_set_encrypt_key(dev, NETCONF_OPT_ENCRYPTION_KEY, value);
     }
 
     _set_usage(cmd_name);
