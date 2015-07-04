@@ -24,7 +24,7 @@ endif
 ifneq (,$(filter udoo,$(BOARD)))
   export XBEE_UART ?= UART_1
 endif
-#SRC += $(RIOTBASE)/sys/shell/commands/sc_netif.c
+SRC += $(RIOTBASE)/sys/shell/commands/sc_netif.c
 
 USEMODULE += xbee
 #USEMODULE += pn532
@@ -35,7 +35,6 @@ USEMODULE += ng_pktdump
 USEMODULE += ng_netif
 USEMODULE += shell
 USEMODULE += shell_commands 
-USEMODULE += auto_init_ng_netif
 #USEMODULE += ng_netif
 #USEMODULE += sixlowpan
 #USEMODULE += net_if
@@ -47,11 +46,10 @@ USEMODULE += keyexc
 
 ifneq (,$(XBEE_UART))
   CFLAGS += -DXBEE_UART=$(XBEE_UART)
- # CFLAGS += -DDEVELHELP
 else
   # set default
   CFLAGS += -DXBEE_UART=UART_0
 endif
-CFLAGS += -I$(CURDIR)
+
 
 include $(RIOTBASE)/Makefile.include
