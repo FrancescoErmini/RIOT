@@ -145,6 +145,11 @@ typedef enum {
      * @note    Interfaces are not meant to respond to that.
      */
     NETCONF_OPT_NUMOF,
+    /**
+     * @brief en/disable encryption.
+     */
+    NETCONF_OPT_ENCRYPTION,        /**< en/disable encryption */
+    NETCONF_OPT_ENCRYPTION_KEY,    /**< set encryption key */
 } ng_netconf_opt_t;
 
 /**
