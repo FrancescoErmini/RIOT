@@ -17,7 +17,7 @@
  *
  * @}
  */
-
+#include <stdio.h>
 #include "cpu.h"
 #include "sched.h"
 #include "thread.h"
@@ -35,7 +35,7 @@ typedef struct {
 static gpio_state_t gpio_config[GPIO_NUMOF];
 
 int gpio_init(gpio_t dev, gpio_dir_t dir, gpio_pp_t pushpull)
-{
+{ puts("\n inside gpio_init");
     Pio *port = 0;
     uint32_t pin = 0;
 
@@ -815,7 +815,7 @@ int gpio_read(gpio_t dev)
 }
 
 void gpio_set(gpio_t dev)
-{
+{puts("  inside gpio set");
     switch (dev) {
 #if GPIO_0_EN
         case GPIO_0:
