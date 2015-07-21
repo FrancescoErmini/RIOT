@@ -21,7 +21,7 @@
  */
 
 #include <string.h>
-
+#include <stdio.h>
 #include "xbee.h"
 #include "xtimer.h"
 #include "msg.h"
@@ -475,14 +475,14 @@ int xbee_init(xbee_t *dev, uart_t uart, uint32_t baudrate,
         return -ENXIO;
     }
     if (reset_pin != GPIO_UNDEF) {
-        if (gpio_init(reset_pin, GPIO_DIR_OUT, GPIO_NOPULL) < 0) {
+        if (gpio_init(reset_pin, GPIO_DIR_OUT,0) < 0) {
             DEBUG("xbee: Error initializing RESET pin\n");
             return -ENXIO;
         }
         gpio_set(reset_pin);
     }
     if (sleep_pin != GPIO_UNDEF) {
-        if (gpio_init(sleep_pin, GPIO_DIR_OUT, GPIO_NOPULL) < 0) {
+        if (gpio_init(sleep_pin,GPIO_DIR_OUT, 1) < 0) {
             DEBUG("xbee: Error initializing SLEEP pin\n");
             return -ENXIO;
         }
@@ -530,8 +530,13 @@ static inline bool _is_broadcast(gnrc_netif_hdr_t *hdr)
                                 GNRC_NETIF_HDR_FLAGS_MULTICAST));
 }
 
+<<<<<<< HEAD
 static int _send(gnrc_netdev_t *netdev, gnrc_pktsnip_t *pkt)
 {
+=======
+static int _send(ng_netdev_t *netdev, ng_pktsnip_t *pkt)
+{	puts("sendeeee");
+>>>>>>> Last modifies after degree
     xbee_t *dev = (xbee_t *)netdev;
     size_t size;
     size_t pos;
