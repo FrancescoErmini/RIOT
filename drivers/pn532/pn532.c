@@ -47,7 +47,7 @@
 #include "errno.h"
 #include "hwtimer.h"
 /* Uncomment these lines to enable debug output for PN532, MIFARE or P2P */
-#define ENABLE_DEBUG    (1)
+#define ENABLE_DEBUG    (0)
 #define MIFAREDEBUG	1
 #define P2PDEBUG	1
 #define PN532DEBUG 1
@@ -127,7 +127,9 @@ int pn532_init_master(pn532_t * dev, spi_t spi_dev, spi_conf_t spi_mode, spi_spe
         DEBUG("SPI_init_master: error initializing SPI_%i device (code %i)\n", dev->spi_dev, res);
         return -1;
     }
-    res = gpio_init_out(spi_cs, 1); //GPIO_PULLUP = 1
+    res = gpio_init(spi_cs, GPIO_DIR_OUT, GPIO_PULLUP); //GPIO_PULLUP = 1
+    //res = gpio_init_out(spi_cs, 1); //GPIO_PULLUP = 1
+
     if (res < 0){
         DEBUG("error initializing GPIO_%i as CS line (code %i)\n", dev->spi_cs, res);
         return -1;
@@ -411,9 +413,9 @@ uint8_t pn532_spi_write_command(pn532_t * dev, uint8_t *buff, uint8_t* cmd, uint
 
 	#ifdef PN532DEBUG
 		for(int i=0; i<length; i++){
-			printf("| %X |",buff[i]);
+		  //printf("| %X |",buff[i]);
 		}
-		printf("END.\n\n");
+		//printf("END.\n\n");
 	#endif
 
 	pn532_ss_off(dev->spi_cs);
@@ -545,13 +547,13 @@ uint8_t pn532_check_ack (pn532_t * dev) {
 	while (!pn532_is_ready(dev)) {				//Stay here until RDY=1
 		timeout--;
 	    if (0 == timeout) {
-	    	printf("Time out when waiting for ACK\n");
+	    	//printf("Time out when waiting for ACK\n");
 	        return PN532_TIMEOUT;
 	    }
 	    delay(10);
 	}
 	if (pn532_read_ack(dev)) {
-		printf("Invalid ACK!\n");
+		//printf("Invalid ACK!\n");
 		return PN532_INVALID_ACK;
 	}
 	return 1;
@@ -583,7 +585,7 @@ uint8_t pn532_read_ack(pn532_t * dev){
 	DEBUG("START ACK FRAME:\n");
 	#ifdef PN532DEBUG
 		for(int i=0; i<ACKSIZE; i++){
-			printf("| %X |", ackbuff[i]);
+			//printf("| %X |", ackbuff[i]);
 		}
 	#endif
 	DEBUG("END ACK FRAME\n");
@@ -623,10 +625,10 @@ void pn532_write_ack(pn532_t * dev){
 uint8_t pn532_print_hex( uint8_t *data, uint8_t numBytes){
 	uint8_t print = 0;
 	for (uint8_t i = 0; i < numBytes; i++) {
-	        printf("| 0x%2X ", data[i]);
+	       // printf("| 0x%2X ", data[i]);
 	        print++;
 	}
-	printf("|\n");
+//	printf("|\n");
 
 	return print;
 }
@@ -698,7 +700,7 @@ void pn532_get_general_status(pn532_t * dev){
 		DEBUG("Start General Status frame.\n");
 		#ifdef PN532DEBUG
 		for(int i=0; i < len; i++){
-			printf("| [%i] %X |", i, readbuffer[i]);
+			//printf("| [%i] %X |", i, readbuffer[i]);
 		}
 		#endif
 		DEBUG("End General Status frame.\n");
@@ -960,10 +962,10 @@ uint8_t pn532_tg_init_as_target(pn532_t * dev, uint8_t mode ) {
 	picc >>= 2;
 	#ifdef P2PDEBUG
 		if ( passive == 1 ) {
-			printf("Passive Mode initialization.\n");
+			//printf("Passive Mode initialization.\n");
 		}
 		if ( dep == 1) {
-			printf("DEP target Mode initialization.\n");
+			//printf("DEP target Mode initialization.\n");
 		}
 		if ( picc == 1 ) {
 			printf("ISO/IEC144443-4 PICC Mode initialization.\n");
@@ -1011,27 +1013,27 @@ uint8_t pn532_tg_init_as_target(pn532_t * dev, uint8_t mode ) {
 	#ifdef P2PDEBUG
 		switch ( baudrate ) {
 			case 0:
-				printf( "Baudrate 106 kbps activated. Value: %d\n", baudrate );
+				//printf( "Baudrate 106 kbps activated. Value: %d\n", baudrate );
 				break;
 			case 1:
-				printf( "Baudrate 212 kbps activated. Value: %d\n", baudrate );
+				//printf( "Baudrate 212 kbps activated. Value: %d\n", baudrate );
 				break;
 			case 2:
-				printf( "Baudrate 424 kbps activated. Value: %d\n", baudrate );
+				//printf( "Baudrate 424 kbps activated. Value: %d\n", baudrate );
 				break;
 		}
 		if ( picc == 1) {
 			printf("ISO/IEC144443-4 PICC mode activated\n");
 		}
 		if ( dep == 1) {
-				printf("DEP mode activated\n");
+			//	printf("DEP mode activated\n");
 		}
 		if ( type == 0x01 ) {
-			printf("Active mode activated!\n");
+			//printf("Active mode activated!\n");
 		} else if ( type == 0x00 ) {
-			printf("Mifare type activated\n");
+			//printf("Mifare type activated\n");
 		} else {
-			printf("FeliCa type activated!\n");
+			//printf("FeliCa type activated!\n");
 		}
 	#endif
 
