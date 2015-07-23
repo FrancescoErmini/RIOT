@@ -39,7 +39,8 @@
 #include "board.h"
 #include "vtimer.h"
 #include "ringbuffer.h"
-
+#include <stdint.h>
+#include <inttypes.h>
 #define delay(X)	(hwtimer_wait(1000*X))
 
 
@@ -85,7 +86,7 @@ printf("ack:%c",rx);
 }
 */
 
-
+/*
 #define DEV             UART_0
 #define BAUD            115200
 
@@ -113,29 +114,29 @@ void rx(void *ptr, char data)
 int tx(void *ptr)
 {
     if (tx_buf.avail > 0) {
-        char data = ringbuffer_get_one(&tx_buf);
+       char data = ringbuffer_get_one(&tx_buf);
+
         uart_write(DEV, data);
-        return 1;
+       return 1;
     }
 
     return 0;
 }
 
 void *uart_thread(void *arg)
-{
+{ printf("thread uart");
     keyexc_t * keyexc = (keyexc_t *) arg ;
     char *status = "1\n";
-
-   while(keyexc->rx_count < 2){
-        ringbuffer_add(&tx_buf, status, strlen(status));
+    ringbuffer_add(&tx_buf, status, strlen(status));
+   while(keyexc->rx_count < 10){
+	   printf("\nsendeeeuart");
         uart_tx_begin(DEV);
         keyexc->rx_count++;
-        vtimer_usleep(2000 * 1000);
+        vtimer_usleep(2000ul * 1000ul);
    }
-
     return 0;
 }
-
+*/
     /*switch (keyexc->status) {
         case KEYEXC_IDLE:
         	keyexc->ack = (uint8_t) c;
@@ -173,18 +174,79 @@ void *uart_thread(void *arg)
     }*/
 
 
+#define DEV             UART_0
+#define BAUD            115200
 
+static volatile int main_pid;
+
+static char uart_stack[THREAD_STACKSIZE_MAIN];
+
+static char rx_mem[128];
+static char tx_mem[128];
+static ringbuffer_t rx_buf;
+static ringbuffer_t tx_buf;
+
+
+void rx(void *ptr, char data)
+{ //printf("reveing\n");
+    msg_t msg;
+
+    ringbuffer_add_one(&rx_buf, data);
+    if (data == '\n') {
+        msg_send(&msg, main_pid);
+    }
+}
+
+int tx(void *ptr)
+{
+    if (tx_buf.avail > 0) {
+        char data = ringbuffer_get_one(&tx_buf);
+        uart_write(DEV, data);
+        return 1;
+    }
+
+    return 0;
+}
+
+void *uart_thread(void *arg)
+{
+    keyexc_t * keyexc = (keyexc_t *) arg;
+char * id1 = "1\n";
+char * id2 = "2\n";
+char * id3 = "3\n";
+char * str;
+if (keyexc->id == 0x01) {
+	str = id1;
+}
+if (keyexc->id == 0x02) {
+	str = id2;
+}
+if (keyexc->id == 0x03) {
+	str = id3;
+}
+    while (keyexc->rx_count < 2) {
+    	keyexc->rx_count++;
+        ringbuffer_add(&tx_buf, str, strlen(str));
+        uart_tx_begin(DEV);
+
+        vtimer_usleep(2000ul * 1000ul);
+    }
+
+    return 0;
+}
 
 void pn532_initialization(pn532_t * pn532){
-    puts("PN532 wake up");
+    //puts("PN532 wake up");
     hwtimer_wait(10*1000*1000);
     pn532_init_master(pn532, SPI_0, SPI_CONF_FIRST_RISING, SPI_SPEED_1MHZ, GPIO_17 );
 
-    	printf("End initialize!\n");
+    	//printf("End initialize!\n");
 
-    	printf("PN532 wake up\n");
+    	//printf("PN532 wake up\n");
+    printf("SPI initialized. ");
+    printf("NFC initialized.");
     	pn532_begin(pn532);
-    	printf("End begin().\n");
+    	//printf("End begin().\n");
 
     	//printf("\nStarting getFirmware version\n");
 
@@ -237,35 +299,20 @@ delay(1000);
 			mi = 0;
 			//pn532_in_data_exchange( &pn532, message, 0, 1, &mi, data, &dlen );
 
-			//puts("Sended. stop.");
+			printf("	...sending");
 			//return 1;
 	}
 return 1;
 }
 
-int p2p_initiator_write(pn532_t * pn532, uint8_t * message,uint8_t size_mess)
-{   uint8_t data[255];
-uint8_t dlen;
-uint8_t atr_res[255];
-uint8_t alen = 0;
-	uint8_t mi = 0;
-	uint8_t actpass = 0x01;	//Active mode
-		uint8_t br = 0x02;		//424 kbps
-		uint8_t next = 0x00;
-				do{
-					pn532_in_data_exchange(pn532, message, size_mess, 1, &mi, data, &dlen );
-				}while( mi == 1 );
-				delay(1);
-				mi = 0;
-				return 1;
-}
+
 
 int p2p_target(pn532_t * pn532, uint8_t * response){
 
 
 	uint8_t data[255];
 	uint8_t dlen = 0;
-	uint8_t responsetmp[255];
+	//uint8_t responsetmp[255];
 
 		uint8_t nad, did, atr, rats, picc;
 		nad = 0x00;
@@ -282,7 +329,7 @@ int p2p_target(pn532_t * pn532, uint8_t * response){
 		pn532_set_parameters( pn532, nad, did, atr, rats, picc );
 		uint8_t mode = 0x02;	//DEP only
 		uint8_t status_target = pn532_tg_init_as_target(pn532, mode );
-		uint8_t mi = 0;
+	//	uint8_t mi = 0;
 		if( status_target != 1) {
 			printf("Initialization didn't successfully finish! HALT\n");
 			delay(10);
@@ -295,8 +342,9 @@ int p2p_target(pn532_t * pn532, uint8_t * response){
 			//*response_size = dlen-7;
 
 			for(int k=7; k < dlen ;k++ ){
+				printf("	...received");
 				//printf("\n received: %02x",data[k]);
-				responsetmp[k-7]=data[k];
+				//responsetmp[k-7]=data[k];
 				response[k-7]=data[k];
 			}
 
@@ -308,46 +356,25 @@ int p2p_target(pn532_t * pn532, uint8_t * response){
 return 1;
 }
 
-int p2p_target_read(pn532_t * pn532, uint8_t * response){
-	uint8_t data[255];
-		uint8_t dlen = 0;
-		uint8_t responsetmp[255];
-
-			uint8_t nad, did, atr, rats, picc;
-			nad = 0x00;
-			did = 0x00;
-			atr = 0x00;
-			rats = 0x01;
-			picc = 0x01;
-			uint8_t mode = 0x02;	//DEP on
-			uint8_t gt[] = { 0x8C, 0x29, 0x0E, 0x04, 0x34, 0xD7, 0x90, 0xE5, 0x61, 0xE0 };
-			for(int k=7; k < dlen ;k++ ){
-							printf("\n received[i-7]: %02x",data[k]);
-							responsetmp[k-7]=data[k];
-							response[k-7]=data[k];
-						}
-return 1;
-
-}
 
 void print802154 (keyexc_t * keyexc) {
 			//printf("\n ID: %i" , keyexc->id);
   	  	   // printf("\n PROTOCOL: %i" , keyexc->proto);
 	printf("\n Display received data for IEEE802154:");
-    		printf("\n CHANNEL: %02x" , keyexc->data802154->channel);
-    		printf("\n PAN ID: ");
+    		printf("\n	CHANNEL: %02x" , keyexc->data802154->channel);
+    		printf("\n	PAN ID: ");
     		for(int i=0;i<2;i++){
     		printf("%02x" , keyexc->data802154->panid[i]);
     		}
-    		printf("\n SHORT ADDRESS: ");
+    		printf("\n	SHORT ADDRESS: ");
     		for(int i=0;i<2;i++){
     		printf("%02x" , keyexc->data802154->short_address[i]);
     		}
-    		printf("\n LONG ADDRESS: ");
+    		printf("\n	LONG ADDRESS: ");
     		for(int i=0;i<8;i++){
     		printf("%02x" , keyexc->data802154->long_address[i]);
     		}
-    		printf("\n KEY: ");
+    		printf("\n	KEY: ");
     		for(int i=0;i<16;i++){
     		printf("%02x" , keyexc->data802154->key[i]);
     		}
@@ -356,15 +383,15 @@ void print802154 (keyexc_t * keyexc) {
 void printRPL (keyexc_t * keyexc) {
 
 			printf("\n Display received data for RPL:");
-			printf("\n RPLDATA1:");
+			printf("\n	RPLDATA1:");
 	        for(int i=0;i<2;i++){
     		printf("%02x" , keyexc->dataRPL->dataRPL1[i]);
     		}
-			printf("\n RPLDATA2:");
+			printf("\n	RPLDATA2:");
 	        for(int i=0;i<2;i++){
     		printf("%02x" , keyexc->dataRPL->dataRPL2[i]);
     		}
-			printf("\n RPLDATA3:");
+			printf("\n	RPLDATA3:");
 	        for(int i=0;i<2;i++){
     		printf("%02x" , keyexc->dataRPL->dataRPL3[i]);
     		}
@@ -372,31 +399,31 @@ void printRPL (keyexc_t * keyexc) {
 void printCOAP (keyexc_t * keyexc) {
 
 			printf("\n Display received data for COAP:");
-			printf("\n COAPDATA1:");
+			printf("\n	COAPDATA1:");
 	        for(int i=0;i<2;i++){
     		printf("%02x" , keyexc->dataCOAP->dataCOAP1[i]);
     		}
-			printf("\n COAPDATA2:");
+			printf("\n	COAPDATA2:");
 	        for(int i=0;i<2;i++){
     		printf("%02x" , keyexc->dataCOAP->dataCOAP2[i]);
     		}
-			printf("\n COAPDATA3:");
+			printf("\n	COAPDATA3:");
 	        for(int i=0;i<2;i++){
     		printf("%02x" , keyexc->dataCOAP->dataCOAP3[i]);
     		}
 }
 void keyexc_print(keyexc_t * keyexc) {
-	if(keyexc->data802154->flag == 1) {
+	//if(keyexc->data802154->flag == 1) {
 		print802154(keyexc);
-	}
-	if(keyexc->dataRPL->flag == 1) {
+	//}
+	//if(keyexc->dataRPL->flag == 1) {
 		printRPL(keyexc);
-	}
-	if(keyexc->dataCOAP->flag == 1) {
+	//}
+	//if(keyexc->dataCOAP->flag == 1) {
 		printCOAP(keyexc);
-	}
-	else
-		printf("\nNo data received for any of known protocol");
+	//}
+	//else
+	//	printf("\nNo data received for any of known protocol");
 }
 static void callback(void *done_)
 {
@@ -408,70 +435,102 @@ int keyexc(keyexc_t * keyexc)
 {
 	uint8_t ackrx;
 	uint8_t acktx = keyexc->ack;
+
+
+
 	 main_pid = thread_getpid();
-	 ringbuffer_init(&rx_buf, rx_mem, 128);
-	     ringbuffer_init(&tx_buf, tx_mem, 128);
-	     printf("Initializing UART @ %i", BAUD);
-	     if (uart_init(DEV, BAUD, rx, tx, 0) >= 0) {
-	         puts("   ...done");
-	     }
-	     else {
-	         puts("   ...failed");
-	         return 1;
-	     }
+
+	    printf("\nUART initialization");
+
+	    ringbuffer_init(&rx_buf, rx_mem, 128);
+	    ringbuffer_init(&tx_buf, tx_mem, 128);
+
+	    if (uart_init(DEV, BAUD, rx, tx, 0) >= 0) {
+	           puts("   ...done");
+	       }
+	       else {
+	           puts("   ...failed");
+	           return 1;
+	       }
 
 
-	    pn532_t * pn532 = keyexc ->dev;
+
+	    pn532_t * pn532 = keyexc->dev;
 		pn532_initialization(pn532);
 		volatile int done = 0;
       hwtimer_set(TIMEOUT, callback, (void *) &done);
   do {
 
     	   if(keyexc->node_type == 0) {
-    	  			  puts("\n\n THIS IS GATEWAY");
-
+    	  			  puts("\n\nTHIS IS GATEWAY");
+    	  			 puts("\nWaiting node ID");
     	  			 p2p_target(pn532,&(keyexc->id));	// wait to hear from NFC the ID of the Sensor...
-    	  			// keyexc->id=1; // da rimovere
+    	  			//keyexc->id=1; // da rimovere
 
     	  			 hwtimer_wait(6000000);// wait resp
     	  			// printf("\n\nRIOT Gateway --> Linux MySQL Database: ");
-    	  			 printf("\n received ID:%i",keyexc->id);
-    	  			thread_create(uart_stack, THREAD_STACKSIZE_MAIN, THREAD_PRIORITY_MAIN - 1,
-    	  			                  0, uart_thread, 0, "uart");
 
+    	  			 thread_create(uart_stack, THREAD_STACKSIZE_MAIN, THREAD_PRIORITY_MAIN - 1,
+    	  				                    0, uart_thread, keyexc, "uart");
+printf("\n Received data from MySQL database for protocols:");
 		 // the _rx_cb function will be call when Linux send data. at the end of the process all parameters will be saved.
- while (keyexc->status != KEYEXC_DONE) {
+int fsmstop = 0;
+   while (fsmstop == 0) {
 		 msg_t msg;
 		 msg_receive(&msg);
+
 		 char buf[128];
 		 int res = ringbuffer_get(&rx_buf, buf, rx_buf.avail);
 		 buf[res] = '\0';
+		 int protocol;
 		 switch(keyexc->status) {
+
 			 case KEYEXC_IDLE:
 				 memcpy(&(keyexc->id),(uint8_t*)buf,1);
 				 keyexc->status=KEYEXC_PROTO;
 				 break;
 			 case KEYEXC_PROTO:
-				 memcpy(&(keyexc->proto),(int*)buf,1);
-				 if(keyexc->proto == IEEE802154) {
-					 	 puts("IEEE802154");
-					 keyexc->status=KEYEXC_CHANNEL;
+
+				 //memcpy(&(keyexc->proto),(int*)buf,1);
+				 protocol=atoi(buf);
+				// printf("\n\nproto ricevuto come int: %i, come hex: %02x, come char: %c.",keyexc->proto,keyexc->proto,keyexc->proto);
+				 //printf("\n\nproto ricevuto come int: %i, come hex: %02x, come char: %c.",protocol,protocol,protocol);
+				// keyexc->proto = protocol;
+				 if(protocol == 1) {
+					 printf("\n	IEEE802154");
 					 keyexc->data802154->flag = 1;
+					 keyexc->status=KEYEXC_CHANNEL;
+					 break;
+
 				 }
-				 if(keyexc->proto == RPL) {
-					 puts("RPL");
-				   keyexc->status=KEYEXC_RPLDATA1;
+				 if(protocol == 2) {
+				   printf("\n	RPL");
 				   keyexc->dataRPL->flag = 1;
+				   keyexc->status=KEYEXC_RPLDATA1;
+				   break;
 				}
-				 if(keyexc->proto == COAP) {
-					 puts("COAP");
+				 if(protocol == 3) {
+					 printf("\n	COAP");
+					 keyexc->dataCOAP->flag = 1;
 				     keyexc->status=KEYEXC_COAPDATA1;
-				     keyexc->dataCOAP->flag = 1;
+				     break;
 				}
-				 else { puts("fsm stop.");
+				 if(protocol == 0){
+					 printf("\n	PROTOUNDEF");
 					 keyexc->status = KEYEXC_PROTO;
+					 break;
 				 }
-				 break;
+
+
+				 else {
+					 printf("\n stop receiving.");
+					 fsmstop = 1;
+					 break;
+					// keyexc->status = KEYEXC_FSMSTOP;
+				 }
+
+
+
 			 case KEYEXC_CHANNEL:
 				 memcpy(&(keyexc->data802154->channel),(uint8_t*)buf,1);
 				 keyexc->status=KEYEXC_PANID;
@@ -521,14 +580,14 @@ int keyexc(keyexc_t * keyexc)
 
  } //while
     	  		     //printf("\nLinux MySQL Database --> RIOT Gateway");
- 	 	 	 	 	 printf("\n Received data from MySQL database:");
+
     	  		     keyexc_print(keyexc); //Print received value form MySQL to GAteway!
     	  		     delay(1000);
-    	  		     printf("\n Sending data through NFC...");
+    	  		     printf("\n Sending data through NFC...\n");
     	  		     p2p_initiator(pn532,&(keyexc->id),1);
 
     	  			p2p_target(pn532,&ackrx);
-    	  			 p2p_initiator(pn532,(uint8_t)&(keyexc->proto),1);
+    	  			 p2p_initiator(pn532,&(keyexc->proto),1);
     	  			p2p_target(pn532,&ackrx);
     	  			 p2p_initiator(pn532,&(keyexc->data802154->channel),1);
     	  			p2p_target(pn532,&ackrx);
@@ -560,9 +619,9 @@ int keyexc(keyexc_t * keyexc)
               	  		 p2p_initiator(pn532,&(keyexc->id),1); // sensore manda il proprio id
 
               	  		 printf("\n Receiving data through NFC...");
-              	  		 p2p_target(pn532,(uint8_t)&(keyexc->id));
+              	  		 p2p_target(pn532,&(keyexc->id));
               	  	     p2p_initiator(pn532,&acktx,1);
-              	  		 p2p_target(pn532,(uint8_t)&(keyexc->proto));
+              	  		 p2p_target(pn532,&(keyexc->proto));
               	  		p2p_initiator(pn532,&acktx,1);
               	  		 p2p_target(pn532,&(keyexc->data802154->channel));
               	  		p2p_initiator(pn532,&acktx,1);
@@ -593,7 +652,7 @@ int keyexc(keyexc_t * keyexc)
 //TODO pn532_ss_off(pn532->spi_cs);
 //TODO spi_poweroff(SPI_0);
 done=1;
-printf("\n done.");
+printf("\n Key exchange finish.");
      } while (done == 0);
 
        // printf("\n\n exit with status %02x   \n\n",keyexc->status);
@@ -639,6 +698,9 @@ keyexc->data802154 = data802154;
 keyexc->dataRPL = dataRPL;
 keyexc->dataCOAP = dataCOAP;
 keyexc->status = KEYEXC_IDLE;
+keyexc->data802154->flag = 0;
+keyexc->dataCOAP->flag = 0;
+keyexc->dataRPL->flag = 0;
 keyexc->proto=0;
 keyexc->rx_count=0;
 keyexc->ack=0x00;

@@ -540,7 +540,7 @@ static inline bool _is_broadcast(ng_netif_hdr_t *hdr) {
 }
 
 static int _send(ng_netdev_t *netdev, ng_pktsnip_t *pkt)
-{	puts("sendeeee");
+{	puts("		...send");
     xbee_t *dev = (xbee_t *)netdev;
     size_t size;
     size_t pos;

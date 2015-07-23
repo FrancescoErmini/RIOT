@@ -46,7 +46,7 @@ static xbee_t xbee_devs[XBEE_NUM];
 static char _nomac_stacks[XBEE_MAC_STACKSIZE][XBEE_NUM];
 
 void auto_init_xbee(void)
-{    printf("\nAUTO_INIT_XBEE_BLABLA....");
+{
     for (int i = 0; i < XBEE_NUM; i++) {
         const xbee_params_t *p = &xbee_params[i];
         DEBUG("Initializing XBee radio at UART_%i\n", p->uart);
@@ -59,7 +59,7 @@ void auto_init_xbee(void)
         if (res < 0) {
             DEBUG("Error initializing XBee radio device!");
         }
-        else {puts("nomac init");
+        else {
            ng_nomac_init(_nomac_stacks[i],
                     XBEE_MAC_STACKSIZE, XBEE_MAC_PRIO, "xbee",
                     (ng_netdev_t *)&xbee_devs[i]);
