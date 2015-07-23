@@ -535,8 +535,6 @@ static int _send(gnrc_netdev_t *netdev, gnrc_pktsnip_t *pkt)
 {
 =======
 static int _send(ng_netdev_t *netdev, ng_pktsnip_t *pkt)
-{	puts("sendeeee");
->>>>>>> Last modifies after degree
     xbee_t *dev = (xbee_t *)netdev;
     size_t size;
     size_t pos;

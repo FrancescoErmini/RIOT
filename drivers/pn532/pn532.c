@@ -38,10 +38,6 @@
 #include <hwtimer_cpu.h>
 #include <periph/gpio.h>
 #include <periph/spi.h>
-#include <pio/pio_sam3x8e.h>
-#include <sam3x8e.h>
-#include <component/component_pio.h>
-#include <board.h>
 #include <periph_conf.h>
 #include "debug.h"
 #include "errno.h"
@@ -49,8 +45,8 @@
 /* Uncomment these lines to enable debug output for PN532, MIFARE or P2P */
 #define ENABLE_DEBUG    (0)
 #define MIFAREDEBUG	1
-#define P2PDEBUG	1
-#define PN532DEBUG 1
+//#define P2PDEBUG	1
+//#define PN532DEBUG 1
 
 /* Uncomment these lines to enable reverse bit order function before to send and after reading msg */
 #define LSBfirst 1		//Reverse bit order
@@ -193,7 +189,7 @@ uint8_t pn532_spi_transfer_bytes(pn532_t * dev, uint8_t *buffer, uint8_t blen){
 		}
 	#endif
 
-	uint8_t n = spi_transfer_bytes(dev->spi_dev, buffer, NULL, blen);
+	int n = spi_transfer_bytes(dev->spi_dev, (char*)buffer, NULL, blen);
 
 	#ifdef LSBfirst
 		for(uint8_t i=0; i<blen; i++){
@@ -201,7 +197,7 @@ uint8_t pn532_spi_transfer_bytes(pn532_t * dev, uint8_t *buffer, uint8_t blen){
 			buffer[i] = rev;
 		}
 	#endif
-
+n = (uint8_t) n;
 	return n;
 }
 
@@ -215,10 +211,12 @@ uint8_t pn532_spi_transfer_bytes(pn532_t * dev, uint8_t *buffer, uint8_t blen){
 uint8_t pn532_spi_read(pn532_t * dev){
 
 	uint8_t in;
+	//char inn = (char) in;
 	int res;
 
-	res = spi_transfer_byte(dev->spi_dev, NULL, &in);
+	res = spi_transfer_byte(dev->spi_dev, 0, (char*)&in);
 
+//	in = (uint8_t) inn;
 	/* Reverse bit order before reading. PN532 uses SPI in LSB mode. */
 		in = reverse(in);
 
@@ -413,9 +411,9 @@ uint8_t pn532_spi_write_command(pn532_t * dev, uint8_t *buff, uint8_t* cmd, uint
 
 	#ifdef PN532DEBUG
 		for(int i=0; i<length; i++){
-		  //printf("| %X |",buff[i]);
+		  printf("| %X |",buff[i]);
 		}
-		//printf("END.\n\n");
+		printf("END.\n\n");
 	#endif
 
 	pn532_ss_off(dev->spi_cs);
@@ -547,13 +545,13 @@ uint8_t pn532_check_ack (pn532_t * dev) {
 	while (!pn532_is_ready(dev)) {				//Stay here until RDY=1
 		timeout--;
 	    if (0 == timeout) {
-	    	//printf("Time out when waiting for ACK\n");
+	    	printf("Time out when waiting for ACK\n");
 	        return PN532_TIMEOUT;
 	    }
 	    delay(10);
 	}
 	if (pn532_read_ack(dev)) {
-		//printf("Invalid ACK!\n");
+		printf("Invalid ACK!\n");
 		return PN532_INVALID_ACK;
 	}
 	return 1;
@@ -582,14 +580,15 @@ uint8_t pn532_read_ack(pn532_t * dev){
 
 	pn532_ss_off(dev->spi_cs);
 
-	DEBUG("START ACK FRAME:\n");
-	#ifdef PN532DEBUG
-		for(int i=0; i<ACKSIZE; i++){
-			//printf("| %X |", ackbuff[i]);
-		}
-	#endif
-	DEBUG("END ACK FRAME\n");
 
+	#ifdef PN532DEBUG
+	DEBUG("START ACK FRAME:\n");
+		for(int i=0; i<ACKSIZE; i++){
+			printf("| %X |", ackbuff[i]);
+		}
+
+	DEBUG("END ACK FRAME\n");
+    #endif
 	return memcmp( ackbuff, pn532ack, sizeof(pn532ack));
 }
 
@@ -624,13 +623,15 @@ void pn532_write_ack(pn532_t * dev){
 /**************************************************************************/
 uint8_t pn532_print_hex( uint8_t *data, uint8_t numBytes){
 	uint8_t print = 0;
+
 	for (uint8_t i = 0; i < numBytes; i++) {
-	       // printf("| 0x%2X ", data[i]);
+	       printf("| 0x%2X ", data[i]);
 	        print++;
 	}
-//	printf("|\n");
-
+	printf("|\n");
 	return print;
+
+
 }
 /**************************************************************************/
 /**
@@ -692,18 +693,18 @@ void pn532_get_general_status(pn532_t * dev){
 		return;
 	}
 
+	#ifdef PN532DEBUG
 	// Read response packet
 	uint8_t len = pn532_read_pn(dev, readbuffer );
-
-
 		//Read status information frame
 		DEBUG("Start General Status frame.\n");
-		#ifdef PN532DEBUG
+
 		for(int i=0; i < len; i++){
-			//printf("| [%i] %X |", i, readbuffer[i]);
+			printf("| [%i] %X |", i, readbuffer[i]);
 		}
-		#endif
 		DEBUG("End General Status frame.\n");
+	#endif
+
 
 
 	//pn532_write_ack();
@@ -725,7 +726,7 @@ void pn532_get_general_status(pn532_t * dev){
 /**************************************************************************/
 uint8_t pn532_set_parameters(pn532_t * dev, uint8_t nad, uint8_t did, uint8_t autatr, uint8_t autrats, uint8_t picc ) {
 
-	uint8_t flag;
+	uint8_t flag = 0;
 	if( nad != 1 && nad != 0x00 ) {
 		return 0;
 	} else {
@@ -886,7 +887,8 @@ uint16_t pn532_in_jump_for_psl (pn532_t * dev, uint8_t actpass, uint8_t br, uint
 	//Delay
 	delay(1500);
 	//Read response
-	uint16_t len = pn532_read_pn(dev, readbuffer );
+	//uint16_t len =
+			pn532_read_pn(dev, readbuffer );
 	if ( readbuffer[2] != 0x00 ) {
 			printf("Status InJumpForPSL incorrect! Value: %X\n", readbuffer[2] );
 		return PN532_INVALID_FRAME;
@@ -955,17 +957,18 @@ uint8_t pn532_in_data_exchange (pn532_t * dev, uint8_t * buffer, uint8_t blen, u
 uint8_t pn532_tg_init_as_target(pn532_t * dev, uint8_t mode ) {
 
 
-	uint8_t passive = mode & 1;
+
 	uint8_t dep = mode & 2;
 	dep >>= 1;
 	uint8_t picc = mode & 4;
 	picc >>= 2;
 	#ifdef P2PDEBUG
+	uint8_t passive = mode & 1;
 		if ( passive == 1 ) {
-			//printf("Passive Mode initialization.\n");
+			printf("Passive Mode initialization.\n");
 		}
 		if ( dep == 1) {
-			//printf("DEP target Mode initialization.\n");
+			printf("DEP target Mode initialization.\n");
 		}
 		if ( picc == 1 ) {
 			printf("ISO/IEC144443-4 PICC Mode initialization.\n");
@@ -1000,7 +1003,7 @@ uint8_t pn532_tg_init_as_target(pn532_t * dev, uint8_t mode ) {
 	/* Delay */
 	delay(60);
     uint16_t len = pn532_read_pn(dev, readbuffer );
-	#ifdef P2PDEBUG
+	#ifdef PN532DEBUG
 		pn532_print_hex( readbuffer, len );
 	#endif
 	uint8_t baudrate = ( readbuffer[2] & 0x70 ) ;
@@ -1009,31 +1012,32 @@ uint8_t pn532_tg_init_as_target(pn532_t * dev, uint8_t mode ) {
 	picc >>= 3;
 	dep = ( readbuffer[2] & 0x04 );
 	dep >>= 2;
-	uint8_t type = ( readbuffer[2] & 0x03 );
+
 	#ifdef P2PDEBUG
+	uint8_t type = ( readbuffer[2] & 0x03 );
 		switch ( baudrate ) {
 			case 0:
-				//printf( "Baudrate 106 kbps activated. Value: %d\n", baudrate );
+				printf( "Baudrate 106 kbps activated. Value: %d\n", baudrate );
 				break;
 			case 1:
-				//printf( "Baudrate 212 kbps activated. Value: %d\n", baudrate );
+				printf( "Baudrate 212 kbps activated. Value: %d\n", baudrate );
 				break;
 			case 2:
-				//printf( "Baudrate 424 kbps activated. Value: %d\n", baudrate );
+				printf( "Baudrate 424 kbps activated. Value: %d\n", baudrate );
 				break;
 		}
 		if ( picc == 1) {
 			printf("ISO/IEC144443-4 PICC mode activated\n");
 		}
 		if ( dep == 1) {
-			//	printf("DEP mode activated\n");
+				printf("DEP mode activated\n");
 		}
 		if ( type == 0x01 ) {
-			//printf("Active mode activated!\n");
+			printf("Active mode activated!\n");
 		} else if ( type == 0x00 ) {
-			//printf("Mifare type activated\n");
+			printf("Mifare type activated\n");
 		} else {
-			//printf("FeliCa type activated!\n");
+			printf("FeliCa type activated!\n");
 		}
 	#endif
 
@@ -1333,7 +1337,8 @@ bool pn532_read_passive_target_id(pn532_t * dev, uint8_t cardbaudrate, uint8_t *
 	cc[1] = 1;
 	cc[2] = cardbaudrate;
 
-	uint8_t res = pn532_spi_write_command(dev, writebuffer, cc, 3 );
+	///uint8_t res =
+			pn532_spi_write_command(dev, writebuffer, cc, 3 );
 
 		DEBUG("Tranferred %d bytes.\n", res);
 
@@ -1710,7 +1715,7 @@ uint8_t pn532_format_to_ndef(pn532_t * dev, uint8_t * url, uint8_t ndefprefix, u
 		        	    }
 
 		        	    printf("Try to write to sector 1 as an NDEF Message");
-		        	    if ( strlen(url) > 38 ) {
+		        	    if ( strlen((const char*)url) > 38 ) {
 		        	    	// The length is also checked in the WriteNDEFURI function, but lets
 		        	    	// warn users here just in case they change the value and it's bigger
 		        	    	// than it should be
@@ -1718,7 +1723,7 @@ uint8_t pn532_format_to_ndef(pn532_t * dev, uint8_t * url, uint8_t ndefprefix, u
 		        	    	return 0;
 		        	    }
 		        	    // URI is within size limits ... write it to the card and report success/failure
-		        	    success = pn532_mifareclassic_write_ndef_uri(dev, 1, ndefprefix, url );
+		        	    success = pn532_mifareclassic_write_ndef_uri(dev, 1, ndefprefix, (const char *)url );
 		        	    if (success) {
 		        	    	printf("NDEF URI Record written to sector 1\n");
 		        	    }
