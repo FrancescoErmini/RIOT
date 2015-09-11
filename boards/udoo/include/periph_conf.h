@@ -142,8 +142,6 @@ extern "C" {
 #define SPI_0_SCK_PORT_CLKEN()   (PMC->PMC_PCER0 |= (1 << ID_PIOA));
 /** @} */
 
-
-
 /**
  * @name GPIO configuration
  * @{
@@ -182,7 +180,6 @@ extern "C" {
 #define GPIO_30_EN          1
 #define GPIO_31_EN          1
 #define GPIO_IRQ_PRIO       1
-
 
 /* GPIO channel 0 config */
 #define GPIO_0_DEV          PIOA
