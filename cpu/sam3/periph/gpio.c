@@ -815,7 +815,7 @@ int gpio_read(gpio_t dev)
 }
 
 void gpio_set(gpio_t dev)
-{puts("  inside gpio set");
+{
     switch (dev) {
 #if GPIO_0_EN
         case GPIO_0:
