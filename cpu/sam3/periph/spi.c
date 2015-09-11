@@ -84,7 +84,7 @@ void spi_poweroff(spi_t dev)
 }
 
 int spi_init_master(spi_t dev, spi_conf_t conf, spi_speed_t speed)
-{ puts("   dentro a spi init master");
+{ 
     uint8_t speed_divider;
     Spi *spi_port;
 

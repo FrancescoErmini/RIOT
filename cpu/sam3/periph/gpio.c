@@ -35,7 +35,7 @@ typedef struct {
 static gpio_state_t gpio_config[GPIO_NUMOF];
 
 int gpio_init(gpio_t dev, gpio_dir_t dir, gpio_pp_t pushpull)
-{ puts("\n inside gpio_init");
+{ 
     Pio *port = 0;
     uint32_t pin = 0;
 
