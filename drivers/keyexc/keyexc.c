@@ -717,7 +717,7 @@ if (uart_init(uart, baudrate, _rx_cb, _tx_cb, keyexc) < 0) {
 }
 
 
-void keyexc_set_xbee(kernel_pid_t interfaccia_xbee)
+void keyexc_set_xbee(kernel_pid_t interfaccia_xbee, keyexc_t * keyexc)
 {
 
 //queste funzioni non sono verificate, usale come riferimento, potrebbe mancare qualche argomento.
