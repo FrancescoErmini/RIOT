@@ -721,7 +721,7 @@ void keyexc_set_xbee(kernel_pid_t interfaccia_xbee)
 {
 
 //queste funzioni non sono verificate, usale come riferimento, potrebbe mancare qualche argomento.
-	ng_netapi_set(interfaccia_xbee,NETCONF_OPT_CHANNEL,&(keyexc->data802154->channel),1);
+	/*ng_netapi_set(interfaccia_xbee,NETCONF_OPT_CHANNEL,&(keyexc->data802154->channel),1);
 	ng_netapi_set(interfaccia_xbee,NETCONF_OPT_NID,keyexc->data802154->panid,2);
 	ng_netapi_set(interfaccia_xbee,NETCONF_OPT_ADDRESS,keyexc->data802154->short_address,2);
 	ng_netapi_set(interfaccia_xbee,NETCONF_OPT_ADDRESS_LONG,keyexc->data802154->long_address,8);
@@ -729,6 +729,7 @@ void keyexc_set_xbee(kernel_pid_t interfaccia_xbee)
 
 	NETCONF_OPT_ENCRYPTION, &encrypt_status,1);
 	ng_netapi_set(interfaccia_xbee,NETCONF_OPT_ENCRYPTION_KEY,keyexc->data802154->key,16);
+	*/
 
 //Questa potrebbe servire a settare il source adress a 64 bit, ma è da testare.
 //ng_netapi_set(interfaccia_xbee, NETCONF_OPT_SRC_LEN, 0, &src_len, sizeof(src_len));
