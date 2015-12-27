@@ -21,7 +21,6 @@
  */
 
 #include <string.h>
-#include <stdio.h>
 #include "xbee.h"
 #include "xtimer.h"
 #include "msg.h"
@@ -530,11 +529,8 @@ static inline bool _is_broadcast(gnrc_netif_hdr_t *hdr)
                                 GNRC_NETIF_HDR_FLAGS_MULTICAST));
 }
 
-<<<<<<< HEAD
 static int _send(gnrc_netdev_t *netdev, gnrc_pktsnip_t *pkt)
 {
-=======
-static int _send(ng_netdev_t *netdev, ng_pktsnip_t *pkt)
     xbee_t *dev = (xbee_t *)netdev;
     size_t size;
     size_t pos;
