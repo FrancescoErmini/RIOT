@@ -91,7 +91,7 @@ typedef struct {
 int keyexc(keyexc_t * keyexc);
 
 void keyexc_init(keyexc_t * keyexc, pn532_t * pn532, keyexc_node_t node_type, uint8_t id, keyexc_802154_t * data802154, keyexc_RPL_t * dataRPL, keyexc_COAP_t * dataCOAP);
-void keyexc_set_xbee(xbee_t * dev, keyexc_t * keyexc);
+void keyexc_set_xbee(kernel_pid_t interfaccia_xbee, keyexc_t * keyexc);
 int timeout_test(void);
 
 #ifdef __cplusplus
