@@ -12,6 +12,7 @@
  * @ modified my Francesco Ermini for thesis porpose
  * @}
  */
+#include <stdio.h>
 
 #include "net/gnrc.h"
 #include "net/gnrc/pktdump.h"
@@ -23,8 +24,8 @@
 
 #include "pn532.h"
 #include "keyexc.h"
-#include "hwtimer.h"
-#include "vtimer.h"
+#include "xtimer.h"
+//#include "vtimer.h"
 #ifndef _SENSOR
 #define _SENSOR (1)
 #endif
