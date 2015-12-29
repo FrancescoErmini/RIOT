@@ -586,8 +586,12 @@ static int _netif_set(char *cmd_name, kernel_pid_t dev, char *key, char *value)
     else if (strcmp("state", key) == 0) {
         return _netif_set_state(dev, value);
     }
-
-    _set_usage(cmd_name);
+    else if (strcmp("csma_retries", key) == 0) {       
+        return _netif_set_u8(dev, NETOPT_CSMA_RETRIES, value);     
+    }      
+    else if (strcmp("cca_threshold", key) == 0) {      
+        return _netif_set_u8(dev, NETOPT_CCA_THRESHOLD, value);        
+    }    _set_usage(cmd_name);
     return 1;
 }
 
