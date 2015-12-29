@@ -719,15 +719,15 @@ if (uart_init(uart, baudrate, _rx_cb, _tx_cb, keyexc) < 0) {
 
 void keyexc_set_xbee(xbee_t * dev, keyexc_t * keyexc)
 {
-
-	dev->driver->set((ng_netdev_t *)dev,NETCONF_OPT_CHANNEL,&(keyexc->data802154->channel),1);
-	dev->driver->set((ng_netdev_t *)dev,NETCONF_OPT_NID,keyexc->data802154->panid,2);
-	dev->driver->set((ng_netdev_t *)dev,NETCONF_OPT_ADDRESS,keyexc->data802154->short_address,2);
-	dev->driver->set((ng_netdev_t *)dev,NETCONF_OPT_ADDRESS_LONG,keyexc->data802154->long_address,8);
+/*
+	dev->driver->set((ng_netdev_t *)dev,NETOPT_CHANNEL,&(keyexc->data802154->channel),1);
+	dev->driver->set((ng_netdev_t *)dev,NETOPT_NID,keyexc->data802154->panid,2);
+	dev->driver->set((ng_netdev_t *)dev,NETOPT_ADDRESS,keyexc->data802154->short_address,2);
+	dev->driver->set((ng_netdev_t *)dev,NETOPT_ADDRESS_LONG,keyexc->data802154->long_address,8);
 	ng_netconf_enable_t encrypt_status = NETCONF_ENABLE;
-	dev->driver->set((ng_netdev_t *)dev,NETCONF_OPT_ENCRYPTION, &encrypt_status,1);
-	dev->driver->set((ng_netdev_t *)dev,NETCONF_OPT_ENCRYPTION_KEY,keyexc->data802154->key,16);
-
+	dev->driver->set((ng_netdev_t *)dev,NETOPT_ENCRYPTION, &encrypt_status,1);
+	dev->driver->set((ng_netdev_t *)dev,NETOPT_ENCRYPTION_KEY,keyexc->data802154->key,16);
+*/
 }
 
 
