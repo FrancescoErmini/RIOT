@@ -49,7 +49,7 @@ void auto_init_xbee(void)
 {
     for (size_t i = 0; i < XBEE_NUM; i++) {
         const xbee_params_t *p = &xbee_params[i];
-        DEBUG("Initializing XBee radio at UART_%i\n", p->uart);        
+        DEBUG("Initializing XBee radio at UART_%i\n", p->uart);
         int res = xbee_init(&xbee_devs[i],
                 p->uart,
                 p->baudrate,
@@ -66,6 +66,7 @@ void auto_init_xbee(void)
         }
     }
 }
+
 #else      
 typedef int dont_be_pedantic;
 #endif /* MODULE_XBEE */
