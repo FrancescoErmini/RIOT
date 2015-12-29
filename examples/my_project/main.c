@@ -47,15 +47,15 @@ int main(void)
 	  // shell_t shell;
 	 printf("\nKEYEXC DEMO\n");
 
-	   ng_netreg_entry_t dump;
+	   gnrc_netreg_entry_t dump;
 	     /* initialize and register pktdump */
-	     dump.pid = ng_pktdump_getpid();
+	     dump.pid = gnrc_pktdump_getpid();
 	     if (dump.pid <= KERNEL_PID_UNDEF) {
 	         puts("Error starting pktdump thread");
 	         return -1;
 	     }
-	     dump.demux_ctx = NG_NETREG_DEMUX_CTX_ALL;
-	     ng_netreg_register(NG_NETTYPE_UNDEF, &dump);
+	     dump.demux_ctx = GNRC_NETREG_DEMUX_CTX_ALL;
+	     gnrc_netreg_register(GNRC_NETTYPE_UNDEF, &dump);
 
 
 
