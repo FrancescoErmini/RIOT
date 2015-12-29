@@ -26,12 +26,11 @@
 #include <pn532.h>
 #include <keyexc.h>
  #include <xbee.h>
-#include <hwtimer.h>
+#include "xtimer.h"
 #include <periph_conf.h>
 #include <periph/spi.h>
 #include <periph/gpio.h>
 #include <periph/uart.h>
-#include <hwtimer.h>
 #include "cpu.h"
 #include "msg.h"
 #include "kernel.h"
@@ -41,13 +40,16 @@
 #include "ringbuffer.h"
 #include <stdint.h>
 #include <inttypes.h>
-#define delay(X)	(hwtimer_wait(1000*X))
+#define delay(X)	(xtimer_usleep(1000*X))
 
-
-
-#define TIMEOUT_S (40)
-#define TIMEOUT_US (TIMEOUT_S * 1000 * 1000)
-#define TIMEOUT (HWTIMER_TICKS(TIMEOUT_US))
+unsigned long count = 0;
+	xtimer_t xtimer;
+    xtimer.callback = callback;
+    xtimer.arg = (void *) &done;
+	
+//#define TIMEOUT_S (40)
+//#define TIMEOUT_US (TIMEOUT_S * 1000 * 1000)
+#define TIMEOUT (40000000)
 /*
 static int _tx_cb(void *arg)
 {
@@ -237,7 +239,7 @@ if (keyexc->id == 0x03) {
 
 void pn532_initialization(pn532_t * pn532){
     //puts("PN532 wake up");
-    hwtimer_wait(10*1000*1000);
+    xtimer_usleep(10*1000*1000);
     pn532_init_master(pn532, SPI_0, SPI_CONF_FIRST_RISING, SPI_SPEED_1MHZ, GPIO_17 );
 
     	//printf("End initialize!\n");
@@ -458,7 +460,7 @@ int keyexc(keyexc_t * keyexc)
 	    pn532_t * pn532 = keyexc->dev;
 		pn532_initialization(pn532);
 		volatile int done = 0;
-      hwtimer_set(TIMEOUT, callback, (void *) &done);
+       xtimer_set(&xtimer, TIMEOUT);
   do {
 
     	   if(keyexc->node_type == 0) {
@@ -467,7 +469,7 @@ int keyexc(keyexc_t * keyexc)
     	  			 p2p_target(pn532,&(keyexc->id));	// wait to hear from NFC the ID of the Sensor...
     	  			//keyexc->id=1; // da rimovere
 
-    	  			 hwtimer_wait(6000000);// wait resp
+    	  			 xtimer_usleep(6000000);// wait resp
     	  			// printf("\n\nRIOT Gateway --> Linux MySQL Database: ");
 
     	  			 thread_create(uart_stack, THREAD_STACKSIZE_MAIN, THREAD_PRIORITY_MAIN - 1,
@@ -736,7 +738,7 @@ int timeout_test (void)
 {
 	volatile int done = 0;
 
-	      hwtimer_set(TIMEOUT, callback, (void *) &done);
+			 xtimer_set(&xtimer, TIMEOUT);
 	       do {
 	    	   puts("timeout running");
 	       } while (done == 0);
