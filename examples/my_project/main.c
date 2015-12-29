@@ -12,9 +12,9 @@
  * @ modified my Francesco Ermini for thesis porpose
  * @}
  */
-#include <stdio.h>
-#include "net/ng_netbase.h"
-#include "net/ng_pktdump.h"
+
+#include "net/gnrc.h"
+#include "net/gnrc/pktdump.h"
 //#include "shell.h"
 //#include "shell_commands.h"
 
