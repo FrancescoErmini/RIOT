@@ -67,7 +67,7 @@ void auto_init_xbee(void)
     }
 }
 
-#else      
+#else
 typedef int dont_be_pedantic;
 #endif /* MODULE_XBEE */
 /** @} */
