@@ -60,29 +60,29 @@ int main(void)
 
 
 
-	     kernel_pid_t interfacce_network[NG_NETIF_NUMOF];
+	     kernel_pid_t interfacce_network[GNRC_NETIF_NUMOF];
 	     kernel_pid_t interfaccia_xbee = 0;
-	     size_t numero_interfacce = ng_netif_get(interfacce_network);
+	     size_t numero_interfacce = gnrc_netif_get(interfacce_network);
 
-	         for (size_t i = 0; i < numero_interfacce && i < NG_NETIF_NUMOF; i++) {
+	         for (size_t i = 0; i < numero_interfacce && i < GNRC_NETIF_NUMOF; i++) {
 	            interfaccia_xbee = interfacce_network[i];
 	         }
 
 	         char data[] = " senza cifratura";
 	            size_t addr_len = 8;
 	            uint8_t addr[8]={0x00, 0x13, 0xa2, 0x00, 0x40, 0xc4, 0x36, 0x57};
-	            ng_pktsnip_t *pkt = ng_pktbuf_add(NULL, data, sizeof(data), NG_NETTYPE_UNDEF);
-	            ng_pktsnip_t *hdr = ng_netif_hdr_build(NULL, 0, addr, addr_len);
+	            gnrc_pktsnip_t *pkt = gnrc_pktbuf_add(NULL, data, sizeof(data), GNRC_NETTYPE_UNDEF);
+	            gnrc_pktsnip_t *hdr = gnrc_netif_hdr_build(NULL, 0, addr, addr_len);
 	            LL_PREPEND(pkt, hdr);
 
 	     puts(" Sending some test packets...");
 	            for(int i=0;i<10;i++){
-	            ng_netapi_send(interfaccia_xbee, pkt);
-	            hwtimer_wait(1000*5000);
+	            gnrc_netapi_send(interfaccia_xbee, pkt);
+	            xtimer_usleep(1000*5000);
 	            }
 	            uint16_t src_len = 8;
 
-	            ng_netapi_set(interfaccia_xbee, NETCONF_OPT_SRC_LEN, 0, &src_len, sizeof(src_len));
+	            gnrc_netapi_set(interfaccia_xbee, NETOPT_SRC_LEN, 0, &src_len, sizeof(src_len));
 
 
 
