@@ -20,7 +20,7 @@
  *
  * @}
  */
- 
+
 #include "cpu.h"
 #include "mutex.h"
 #include "sched.h"
