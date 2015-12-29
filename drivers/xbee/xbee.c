@@ -21,6 +21,7 @@
  */
 
 #include <string.h>
+ 
 #include "xbee.h"
 #include "xtimer.h"
 #include "msg.h"
