@@ -411,6 +411,7 @@ static int _set_encryption(xbee_t *dev, uint8_t *val, size_t len)
     }
     if (resp.status == 0) {
         return 2;
+    }
     return -ECANCELED;
 }
 
