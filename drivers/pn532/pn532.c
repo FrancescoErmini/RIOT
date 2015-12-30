@@ -35,13 +35,13 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <hwtimer_cpu.h>
+//#include <hwtimer_cpu.h>
 #include <periph/gpio.h>
 #include <periph/spi.h>
 #include <periph_conf.h>
 #include "debug.h"
 #include "errno.h"
-#include "hwtimer.h"
+#include "xtimer.h"
 /* Uncomment these lines to enable debug output for PN532, MIFARE or P2P */
 #define ENABLE_DEBUG    (0)
 #define MIFAREDEBUG	1
@@ -57,7 +57,7 @@
 #define SPI_DELAY_1ms			   (1U * 1000U)
 #define SPI_DELAY_100us			   (100U)
 /* Set delay(ms) */
-#define delay(X)	(hwtimer_wait(1000*X))
+#define delay(X)	(xtimer_sleep(1000*X))
 #define ACKSIZE 6
 uint8_t pn532ack[ACKSIZE] = {0x00, 0x00, 0xFF, 0x00, 0xFF, 0x00};
 #define NACKSIZE 6
