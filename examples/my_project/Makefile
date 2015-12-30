@@ -12,42 +12,30 @@ FEATURES_PROVIDED += periph_uart periph_gpio periph_spi
 BOARD_INSUFFICIENT_RAM := stm32f0discovery
 
 # Define default pin mappings for some boards:
-ifneq (,$(filter stm32f0discovery,$(BOARD)))
-  export XBEE_UART ?= UART_1
-endif
-ifneq (,$(filter stm32f4discovery,$(BOARD)))
-  export XBEE_UART ?= UART_1
-endif
-ifneq (,$(filter nucleo-f091,$(BOARD)))
-  export XBEE_UART ?= UART_1
-endif
-ifneq (,$(filter udoo,$(BOARD)))
-  export XBEE_UART ?= UART_1
-endif
+#ifneq (,$(filter udoo,$(BOARD)))
+#  export XBEE_UART ?= UART_1
+#endif
 #SRC += $(RIOTBASE)/sys/shell/commands/sc_netif.c
 
 
 USEMODULE += xbee
-USEMODULE += ng_netif
-USEMODULE += auto_init_ng_netif
-USEMODULE += ng_nomac
-USEMODULE += ng_pktdump
+USEMODULE += gnrc_netif
+USEMODULE += auto_init_gnrc_netif
+USEMODULE += gnrc_nomac
+USEMODULE += gnrc_pktdump
 #USEMODULE += shell
 #USEMODULE += shell_commands 
-USEMODULE += uart0
+#USEMODULE += uart0
 USEMODULE += vtimer
 USEMODULE += pn532
 USEMODULE += keyexc
 
+# set default UART to use in case none was defined
+XBEE_UART ?= "UART_NUMOF-1"
 
-ifneq (,$(XBEE_UART))
-  CFLAGS += -DXBEE_UART=$(XBEE_UART)
- # CFLAGS += -DDEVELHELP
+# export UART to params file
+CFLAGS += -DXBEE_UART=$(XBEE_UART)
 
-else
-  # set default
-  CFLAGS += -DXBEE_UART=UART_0
-endif
 
 CFLAGS += -I$(CURDIR)
 
