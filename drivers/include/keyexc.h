@@ -73,6 +73,8 @@ typedef struct {
 
 typedef struct {
 			keyexc_node_t node_type;
+			int uart_dev;
+			uint32_t uart_baud;
 			uint8_t id;
 			uint8_t ack;
 			pn532_t * dev;

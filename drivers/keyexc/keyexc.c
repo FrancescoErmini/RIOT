@@ -42,14 +42,11 @@
 #include <inttypes.h>
 #define delay(X)	(xtimer_usleep(1000*X))
 
-unsigned long count = 0;
-	xtimer_t xtimer;
-    xtimer.callback = callback;
-    xtimer.arg = (void *) &done;
+
 	
 //#define TIMEOUT_S (40)
 //#define TIMEOUT_US (TIMEOUT_S * 1000 * 1000)
-#define TIMEOUT (40000000)
+//#define TIMEOUT (40000000)
 /*
 static int _tx_cb(void *arg)
 {
@@ -176,12 +173,12 @@ void *uart_thread(void *arg)
     }*/
 
 
-#define DEV             UART_0
+#define DEV             (0)
 #define BAUD            115200
 
 static volatile int main_pid;
 
-static char uart_stack[THREAD_STACKSIZE_MAIN];
+//static char uart_stack[THREAD_STACKSIZE_MAIN];
 
 static char rx_mem[128];
 static char tx_mem[128];
@@ -203,7 +200,7 @@ int tx(void *ptr)
 {
     if (tx_buf.avail > 0) {
         char data = ringbuffer_get_one(&tx_buf);
-        uart_write(DEV, data);
+        uart_write(DEV, (uint8_t *)&data, strlen(&data));
         return 1;
     }
 
@@ -211,7 +208,10 @@ int tx(void *ptr)
 }
 
 void *uart_thread(void *arg)
-{
+{ /*
+	A seconda dell'id configurato sul nodo, il sensore manda un codice, id1, al gateway così
+	che il GW cerca nel DB quella riga e poi risponde con tutte le cella della riga.
+	*/
     keyexc_t * keyexc = (keyexc_t *) arg;
 char * id1 = "1\n";
 char * id2 = "2\n";
@@ -229,13 +229,15 @@ if (keyexc->id == 0x03) {
     while (keyexc->rx_count < 2) {
     	keyexc->rx_count++;
         ringbuffer_add(&tx_buf, str, strlen(str));
-        uart_tx_begin(DEV);
+        uart_write(DEV, (uint8_t *)str, strlen(str));
 
         vtimer_usleep(2000ul * 1000ul);
     }
 
     return 0;
 }
+
+
 
 void pn532_initialization(pn532_t * pn532){
     //puts("PN532 wake up");
@@ -427,11 +429,11 @@ void keyexc_print(keyexc_t * keyexc) {
 	//else
 	//	printf("\nNo data received for any of known protocol");
 }
-static void callback(void *done_)
+/*static void callback(void *done_)
 {
     volatile int *done = done_;
     *done = 1;
-}
+}*/
 
 int keyexc(keyexc_t * keyexc)
 {
@@ -447,7 +449,7 @@ int keyexc(keyexc_t * keyexc)
 	    ringbuffer_init(&rx_buf, rx_mem, 128);
 	    ringbuffer_init(&tx_buf, tx_mem, 128);
 
-	    if (uart_init(DEV, BAUD, rx, tx, 0) >= 0) {
+	    if (uart_init(DEV, BAUD, rx, 0) >= 0) {
 	           puts("   ...done");
 	       }
 	       else {
@@ -455,13 +457,11 @@ int keyexc(keyexc_t * keyexc)
 	           return 1;
 	       }
 
-
-
 	    pn532_t * pn532 = keyexc->dev;
 		pn532_initialization(pn532);
-		volatile int done = 0;
+/*volatile int done = 0;
        xtimer_set(&xtimer, TIMEOUT);
-  do {
+   do {*/
 
     	   if(keyexc->node_type == 0) {
     	  			  puts("\n\nTHIS IS GATEWAY");
@@ -472,8 +472,9 @@ int keyexc(keyexc_t * keyexc)
     	  			 xtimer_usleep(6000000);// wait resp
     	  			// printf("\n\nRIOT Gateway --> Linux MySQL Database: ");
 
-    	  			 thread_create(uart_stack, THREAD_STACKSIZE_MAIN, THREAD_PRIORITY_MAIN - 1,
-    	  				                    0, uart_thread, keyexc, "uart");
+    	  			 /*thread_create(uart_stack, THREAD_STACKSIZE_MAIN, THREAD_PRIORITY_MAIN - 1,
+    	  				                    0, uart_thread, keyexc, "uart");*/
+
 printf("\n Received data from MySQL database for protocols:");
 		 // the _rx_cb function will be call when Linux send data. at the end of the process all parameters will be saved.
 int fsmstop = 0;
@@ -653,9 +654,9 @@ int fsmstop = 0;
 
 //TODO pn532_ss_off(pn532->spi_cs);
 //TODO spi_poweroff(SPI_0);
-done=1;
+//done=1;
 printf("\n Key exchange finish.");
-     } while (done == 0);
+  //   } while (done == 0);
 
        // printf("\n\n exit with status %02x   \n\n",keyexc->status);
 
@@ -706,6 +707,12 @@ keyexc->dataRPL->flag = 0;
 keyexc->proto=0;
 keyexc->rx_count=0;
 keyexc->ack=0x00;
+/*
+TODO: passare uart_dev e uart_baud come argomenti
+*/
+
+keyexc->uart_dev = 0;
+keyexc->uart_baud = (115200);
 
 /*if(node_type == 0){ // He is the GAteway, initialize internal uart
 	uart_t uart = UART_0;
@@ -734,7 +741,7 @@ void keyexc_set_xbee(xbee_t * dev, keyexc_t * keyexc)
 
 
 
-int timeout_test (void)
+/*int timeout_test (void)
 {
 	volatile int done = 0;
 
@@ -749,4 +756,4 @@ printf("TIMEOUT OCCURSSS!! %i",a);
 printf("TIMEOUT OCCURSSS!! %i",a);
 printf("TIMEOUT OCCURSSS!! %i",a);
 return 1;
-}
+}*/
