@@ -687,10 +687,10 @@ static int _netif_set(char *cmd_name, kernel_pid_t dev, char *key, char *value)
     else if (strcmp("cca_threshold", key) == 0) {
         return _netif_set_u8(dev, NETOPT_CCA_THRESHOLD, value);
     else if (strcmp("encrypt", key) == 0) {
-          return _netif_set_encrypt(dev, NETCONF_OPT_ENCRYPTION, value);
+        return _netif_set_encrypt(dev, NETOPT_ENCRYPTION, value);
     }
     else if (strcmp("key", key) == 0) {
-          return _netif_set_encrypt_key(dev, NETCONF_OPT_ENCRYPTION_KEY, value);
+        return _netif_set_encrypt_key(dev, NETOPT_ENCRYPTION_KEY, value);
     }
 
     _set_usage(cmd_name);
