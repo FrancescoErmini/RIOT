@@ -165,11 +165,11 @@ static void _print_netopt(netopt_t opt)
             printf("CCA threshold [in dBm]");
             break;
 
-        case NETCONF_OPT_ENCRYPTION:
+        case NETOPT_ENCRYPTION:
             printf("encryption");
             break;
 
-        case NETCONF_OPT_ENCRYPTION_KEY:
+        case NETOPT_ENCRYPTION_KEY:
             printf("encryption key");
             break;
 
@@ -590,25 +590,25 @@ static int _netif_set_encrypt(kernel_pid_t dev, ng_netconf_opt_t opt,
     ng_netconf_enable_t set;
     size_t size = 1;
     if ((strcmp("on", encrypt_str) == 0) || (strcmp("ON", encrypt_str) == 0)) {
-        set = NETCONF_ENABLE;
+        set = NETOPT_ENABLE;
     }
     else if ((strcmp("off", encrypt_str) == 0) || (strcmp("OFF", encrypt_str) == 0)) {
-        set = NETCONF_DISABLE;
+        set = NETOPT_DISABLE;
     }
     else {
         puts("usage: ifconfig <if_id> set encryption [on|off]");
         return 1;
     }
 
-    if (ng_netapi_set(dev, opt, 0, &set, size) < 0) {
+    if (gnrc_netapi_set(dev, opt, 0, &set, size) < 0) {
         printf("error: unable to set ");
-        _print_netconf(opt);
+        _print_netopt(opt);
         puts("");
         return 1;
     }
 
     printf("success: set ");
-    _print_netconf(opt);
+    _print_netopt(opt);
     printf(" on interface %" PRIkernel_pid " to %s\n", dev, encrypt_str);
 
     return 0;
@@ -634,15 +634,15 @@ static int _netif_set_encrypt_key(kernel_pid_t dev, ng_netconf_opt_t opt,
        key[i] = (uint8_t)key_str[i];
    }
 
-    if (ng_netapi_set(dev, opt, 0, key, key_len) < 0) {
+    if (gnrc_netapi_set(dev, opt, 0, key, key_len) < 0) {
         printf("error: unable to set ");
-        _print_netconf(opt);
+        _print_netopt(opt);
         puts("");
         return 1;
     }
 
     printf("success: set ");
-    _print_netconf(opt);
+    _print_netopt(opt);
     printf(" on interface %" PRIkernel_pid " to \n", dev);
     for(int i=0;i<key_len;i++){//print the hex value of the key
     printf("%02x",key[i]);

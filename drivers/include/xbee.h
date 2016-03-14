@@ -85,11 +85,6 @@ extern "C" {
  */
 
 /**
- * @brief   Encryption key length in bytes (128 bit AES encryption)
- */
-#define XBEE_ENCRYPTION_KEY_LEN     (16U)
-
-/**
  * @brief   States of the internal FSM for handling incoming UART frames
  *
  * Incoming data frames on the UART interfaces are handled using a finite state
@@ -144,10 +139,6 @@ typedef struct {
     uint8_t rx_buf[XBEE_MAX_PKT_LENGTH];/**< receiving data buffer */
     uint16_t rx_count;                  /**< counter for ongoing transmission */
     uint16_t rx_limit;                  /**< size RX frame transferred */
-
-    /* optional encryption status */
-    unsigned int encrypt;               /**< Current state of encryption */
-
 } xbee_t;
 
 /**
