@@ -394,8 +394,7 @@ static int _set_proto(xbee_t *dev, uint8_t *val, size_t len)
 }
 
 static int _set_encryption(xbee_t *dev, uint8_t *val, size_t len)
-{
-    dev->encrypt = *val; //store the current encryption status
+{ 
     uint8_t cmd[3];
     resp_t resp;
 /* get the current state of Encryption */
@@ -713,10 +712,10 @@ static int _set(gnrc_netdev_t *netdev, netopt_t opt, void *value, size_t value_l
             return _set_panid(dev, (uint8_t *)value, value_len);
         case NETOPT_PROTO:
             return _set_proto(dev, (uint8_t *)value, value_len);
-        case NETCONF_OPT_ENCRYPTION:
+        case NETOPT_ENCRYPTION:
             return _set_encryption(dev, (uint8_t *) value, value_len);
-        case NETCONF_OPT_ENCRYPTION_KEY:
-            return _set_encryption_key(dev, (uint8_t *)value, value_len);
+        case NETOPT_ENCRYPTION_KEY:
+            return _set_encryption_key(dev, (uint8_t *)value, value_len);            
         default:
             return -ENOTSUP;
     }
