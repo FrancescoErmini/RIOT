@@ -92,7 +92,7 @@ static void _set_usage(char *cmd_name)
          "       * \"src_len\" - sets the source address length in byte\n"
          "       * \"state\" - set the device state\n"
          "       * \"encrypt\" - set the encryption on-off\n"
-         "       * \"key\" - set the 128 bit encryption key\n");
+         "       * \"key\" - set the encryption key in hexadecimal format\n");
 }
 
 static void _mtu_usage(char *cmd_name)
@@ -614,25 +614,46 @@ static int _netif_set_encrypt(kernel_pid_t dev, netopt_t opt,
     return 0;
 }
 
-static int _netif_set_encrypt_key(kernel_pid_t dev, netopt_t opt,
-                           char *key_str)
+static int _netif_set_encrypt_key(kernel_pid_t dev, netopt_t opt, char *key_str)
 {
-    size_t key_len = strlen(key_str);
+    size_t str_len = strlen(key_str);
+    size_t key_len = str_len / 2;
     uint8_t key[key_len];
-    if (key_len == 16U) {
+
+    if (str_len == 14U) {
+        printf("\nNotice: setting 56 bit key.");
+    }
+    else if (str_len == 16U) {
+        printf("\nNotice: setting 64 bit key.");
+    }
+    else if (str_len == 32U) {
         printf("\nNotice: setting 128 bit key.");
     }
-    else if (key_len == 32U) {
+    else if (str_len == 48U) {
+        printf("\nNotice: setting 192 bit key.");
+    }
+    else if (str_len == 64U) {
         printf("\nNotice: setting 256 bit key.");
     }
+    else if (str_len == 128U) {
+        printf("\nNotice: setting 512 bit key.");
+    }
     else {
-        printf("error: invalid key size.");
+        printf("error: invalid key size.\n");
         return 1;
     }
-    /*Convert any char from ASCII table in hex format*/
-   for (int i = 0; i < key_len; i++) {
-       key[i] = (uint8_t)key_str[i];
-   }
+    /* Convert any char from ASCII table in hex format */
+    for (size_t i = 0; i < str_len; i += 2) {
+        int i1 = _hex_to_int(key_str[i]);
+        int i2 = _hex_to_int(key_str[i + 1]);
+
+        if (i1 == -1 || i2 == -1) {
+            puts("error: unable to parse key");
+            return 1;
+        }
+
+        key[i] = (uint8_t)((i1 << 4) + i2);
+    }
 
     if (gnrc_netapi_set(dev, opt, 0, key, key_len) < 0) {
         printf("error: unable to set ");
@@ -644,8 +665,9 @@ static int _netif_set_encrypt_key(kernel_pid_t dev, netopt_t opt,
     printf("success: set ");
     _print_netopt(opt);
     printf(" on interface %" PRIkernel_pid " to \n", dev);
-    for(int i=0;i<key_len;i++){//print the hex value of the key
-    printf("%02x",key[i]);
+    for (size_t i = 0; i < key_len; i++) {
+        /* print the hex value of the key */
+        printf("%02x", key[i]);
     }
     puts("");
     return 0;
