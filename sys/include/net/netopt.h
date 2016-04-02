@@ -221,12 +221,6 @@ typedef enum {
      * @note    Interfaces are not meant to respond to that.
      */
     NETOPT_NUMOF,
-
-    /**
-     * @brief en/disable encryption.
-     */
-    NETOPT_ENCRYPTION,        /**< en/disable encryption */
-    NETOPT_ENCRYPTION_KEY,    /**< set encryption key */
 } netopt_t;
 
 /**
